@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://hya6o2pt7boq"]
+[gd_scene load_steps=5 format=3 uid="uid://hya6o2pt7boq"]
 
 [ext_resource type="Shader" uid="uid://bpcm0t7wkw324" path="res://snow.gdshader" id="1_s71t6"]
+[ext_resource type="PackedScene" uid="uid://dt70jwmlxyqpi" path="res://Player.tscn" id="2_i2psm"]
+[ext_resource type="PackedScene" uid="uid://cnuyyn81u2s70" path="res://DialogueUI.tscn" id="3_mvyat"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_i2psm"]
 shader = ExtResource("1_s71t6")
@@ -20,3 +22,7 @@ material = SubResource("ShaderMaterial_i2psm")
 offset_right = 1153.0
 offset_bottom = 649.0
 color = Color(1, 1, 1, 0)
+
+[node name="Player" parent="." instance=ExtResource("2_i2psm")]
+
+[node name="DialogueUI" parent="Player" instance=ExtResource("3_mvyat")]

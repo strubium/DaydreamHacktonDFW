@@ -3,7 +3,7 @@ extends Control
 
 @onready var name_label = $Panel/MarginContainer/VBoxContainer/CharacterNameLabel
 @onready var text_label = $Panel/MarginContainer/VBoxContainer/DialogueTextLabel
-@onready var next_button = $NextButton
+@onready var next_button = $Panel/NextButton
 
 var dialogue_queue: Array = []
 var current_line_index: int = 0

@@ -138,105 +138,107 @@ layout_mode = 0
 offset_left = 5013.0
 offset_top = 538.0
 offset_right = 5053.0
-offset_bottom = 911.0
+offset_bottom = 902.0
 
 [node name="ColorRect3" type="ColorRect" parent="ColorRect/ColorRect3/ColorRect6"]
 layout_mode = 0
-offset_left = -1.0
+offset_left = -2.0
 offset_top = -528.0
-offset_right = 39.0
+offset_right = 38.0
 offset_bottom = -155.0
 
-[node name="ColorRect2" type="ColorRect" parent="."]
-offset_left = 993.0
-offset_top = -7.0
-offset_right = 1305.0
-offset_bottom = 179.0
+[node name="ColorRect4" type="ColorRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 1015.0
+offset_top = -3.0
+offset_right = 1327.0
+offset_bottom = 183.0
 
-[node name="ColorRect" type="ColorRect" parent="ColorRect2"]
+[node name="ColorRect" type="ColorRect" parent="ColorRect/ColorRect4"]
 layout_mode = 0
 offset_left = 567.0
 offset_top = 1.0
 offset_right = 1335.0
 offset_bottom = 118.0
 
-[node name="ColorRect" type="ColorRect" parent="ColorRect2/ColorRect"]
+[node name="ColorRect" type="ColorRect" parent="ColorRect/ColorRect4/ColorRect"]
 layout_mode = 0
 offset_top = 787.0
 offset_right = 768.0
 offset_bottom = 904.0
 
-[node name="ColorRect2" type="ColorRect" parent="ColorRect2/ColorRect"]
+[node name="ColorRect2" type="ColorRect" parent="ColorRect/ColorRect4/ColorRect"]
 layout_mode = 0
 offset_left = 1061.0
 offset_right = 2533.0
 offset_bottom = 117.0
 
-[node name="ColorRect" type="ColorRect" parent="ColorRect2/ColorRect/ColorRect2"]
+[node name="ColorRect" type="ColorRect" parent="ColorRect/ColorRect4/ColorRect/ColorRect2"]
 layout_mode = 0
 offset_left = 5.0
 offset_top = 787.0
 offset_right = 1433.0
 offset_bottom = 904.0
 
-[node name="ColorRect5" type="ColorRect" parent="ColorRect2/ColorRect"]
+[node name="ColorRect5" type="ColorRect" parent="ColorRect/ColorRect4/ColorRect"]
 layout_mode = 0
 offset_left = 2491.0
 offset_top = 6.0
 offset_right = 2531.0
 offset_bottom = 906.0
 
-[node name="ColorRect5" type="ColorRect" parent="ColorRect2/ColorRect/ColorRect5"]
+[node name="ColorRect5" type="ColorRect" parent="ColorRect/ColorRect4/ColorRect/ColorRect5"]
 layout_mode = 0
 offset_left = -1428.0
 offset_top = -7.0
 offset_right = -1388.0
 offset_bottom = 899.0
 
-[node name="ColorRect3" type="ColorRect" parent="."]
-offset_left = -62.0
-offset_top = 524.0
-offset_right = -22.0
-offset_bottom = 897.0
+[node name="ColorRect5" type="ColorRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = 528.0
+offset_bottom = 901.0
 
-[node name="ColorRect3" type="ColorRect" parent="ColorRect3"]
+[node name="ColorRect3" type="ColorRect" parent="ColorRect/ColorRect5"]
 layout_mode = 0
 offset_top = -528.0
 offset_right = 40.0
 offset_bottom = -155.0
 
-[node name="ColorRect4" type="ColorRect" parent="ColorRect3"]
+[node name="ColorRect4" type="ColorRect" parent="ColorRect/ColorRect5"]
 layout_mode = 0
 offset_left = -225.0
 offset_right = -185.0
 offset_bottom = 373.0
 
-[node name="ColorRect3" type="ColorRect" parent="ColorRect3/ColorRect4"]
+[node name="ColorRect3" type="ColorRect" parent="ColorRect/ColorRect5/ColorRect4"]
 layout_mode = 0
 offset_top = -528.0
 offset_right = 40.0
 offset_bottom = -155.0
 
-[node name="ColorRect4" type="ColorRect" parent="ColorRect3/ColorRect4"]
+[node name="ColorRect4" type="ColorRect" parent="ColorRect/ColorRect5/ColorRect4"]
 layout_mode = 0
 offset_left = 1808.0
 offset_top = -2.0
 offset_right = 1848.0
 offset_bottom = 371.0
 
-[node name="ColorRect3" type="ColorRect" parent="ColorRect3/ColorRect4/ColorRect4"]
+[node name="ColorRect3" type="ColorRect" parent="ColorRect/ColorRect5/ColorRect4/ColorRect4"]
 layout_mode = 0
 offset_top = -528.0
 offset_right = 40.0
 offset_bottom = -155.0
 
-[node name="ColorRect4" type="ColorRect" parent="."]
-offset_left = 1264.0
-offset_top = -6.0
-offset_right = 1304.0
-offset_bottom = 894.0
+[node name="ColorRect6" type="ColorRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 1286.0
+offset_top = -2.0
+offset_right = 1326.0
+offset_bottom = 898.0
 
-[node name="ColorRect4" type="ColorRect" parent="ColorRect4"]
+[node name="ColorRect4" type="ColorRect" parent="ColorRect/ColorRect6"]
 layout_mode = 0
 offset_left = 1043.0
 offset_top = 5.0

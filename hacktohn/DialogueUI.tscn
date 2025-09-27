@@ -28,7 +28,9 @@ layout_mode = 2
 [node name="DialogueTextLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="NextButton" type="Button" parent="Panel"]
+[node name="NextButton" type="Button" parent="."]
 layout_mode = 0
-offset_right = 8.0
-offset_bottom = 8.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = 26.0
+offset_bottom = 24.0

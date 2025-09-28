@@ -484,10 +484,11 @@ document.addEventListener('click', (e) => {
 
       // crew definitions
       const crew = [
-        { id:'capt', name:'Anthony (Capt)', role:'Captain', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0} },
-        { id:'xo', name:'John (XO)', role:'XO', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0} },
-        { id:'eo', name:'Gabe (EO)', role:'Engineer', health:90, maxHealth:100, repairing:null, repairSpeedMult:1.6, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0} },
-        { id:'med', name:'Rin (Medic)', role:'Medic', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, healRate:MEDIC_BASE_HEAL, upgrades: {speed:0, armor:0, med:0, autoHeal:0}, healTarget:null },
+        { id:'capt', name:'Anthony (Capt)', role:'Captain', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
+        { id:'xo', name:'John (XO)', role:'XO', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
+        // Engineer (Gabe) — has an engineer-specific upgrade slot
+        { id:'eo', name:'Gabe (EO)', role:'Engineer', health:90, maxHealth:100, repairing:null, repairSpeedMult:1.6, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
+        { id:'med', name:'Rin (Medic)', role:'Medic', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, healRate:MEDIC_BASE_HEAL, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0}, healTarget:null },
       ];
 
       // tasks (we will multiply baseTime by TASK_TIME_MULT when using)
@@ -500,7 +501,7 @@ document.addEventListener('click', (e) => {
         { id:'comms', title:'Communications', baseTime: 10.0, progress:0, assigned:null, baseDamagePerSec:2.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
       ];
 
-      // Upgrade definitions (added autoHeal)
+      // Upgrade definitions (added autoHeal + engineer-only)
       const UPGRADES = {
         speed: {
           name: 'Tool Kit',
@@ -525,6 +526,13 @@ document.addEventListener('click', (e) => {
           description: 'When equipped on the Medic, they will automatically heal idle crew members when the Medic is not doing anything. (Medic must be alive and idle.)',
           costBase: 40,
           effectPerLevel: 0 // effect is binary: level > 0 enables auto-heal; higher levels may be used for future enhancements
+        },
+        // --- Engineer-only upgrade ---
+        engineer: {
+          name: 'Field Expertise',
+          description: 'Engineers gain +25% repair speed per level (stacks with Tool Kit). Exclusive to the Engineer.',
+          costBase: 35,
+          effectPerLevel: 0.25
         }
       };
 
@@ -678,7 +686,7 @@ document.addEventListener('click', (e) => {
             for (const saved of parsed.crew){
               const c = crew.find(x => x.id === saved.id);
               if (c && saved.upgrades){
-                c.upgrades = Object.assign({ speed:0, armor:0, med:0, autoHeal:0 }, saved.upgrades);
+                c.upgrades = Object.assign({ speed:0, armor:0, med:0, autoHeal:0, engineer:0 }, saved.upgrades);
                 applyCrewUpgradeStats(c);
               }
             }
@@ -717,7 +725,7 @@ document.addEventListener('click', (e) => {
         localStorage.removeItem(SAVE_KEY);
         // reset to difficulty start supplies
         supplies = START_SUPPLIES;
-        crew.forEach(c => { c.upgrades = {speed:0, armor:0, med:0, autoHeal:0}; applyCrewUpgradeStats(c); c.health=c.maxHealth; c.repairing=null; c.healTarget=null; });
+        crew.forEach(c => { c.upgrades = {speed:0, armor:0, med:0, autoHeal:0, engineer:0}; applyCrewUpgradeStats(c); c.health=c.maxHealth; c.repairing=null; c.healTarget=null; });
         tasks.forEach(t => { t.progress=0; t.assigned=null; t.complete=false; t.eventDamageMult=1; t.eventSpeedMult=1; t.events=[]; });
         activeEvents.length = 0;
         stopNextEventTimer();
@@ -728,8 +736,15 @@ document.addEventListener('click', (e) => {
 
       // Update crew's derived stats from upgrades
       function applyCrewUpgradeStats(c){
-        c.repairSpeedMult = 1 + ( (c.upgrades.speed || 0) * UPGRADES.speed.effectPerLevel );
+        // base speed from global "Tool Kit"
+        const globalSpeedFromToolKit = (c.upgrades.speed || 0) * UPGRADES.speed.effectPerLevel;
+        // engineer-specific extra speed
+        const engineerBonus = (c.role === 'Engineer') ? ((c.upgrades.engineer || 0) * UPGRADES.engineer.effectPerLevel) : 0;
+        c.repairSpeedMult = 1 + globalSpeedFromToolKit + engineerBonus;
+
+        // damage reduction from armor upgrades
         c.damageReduction = Math.min(0.9, (c.upgrades.armor || 0) * UPGRADES.armor.effectPerLevel);
+
         if (c.role === 'Medic'){
           const lvl = (c.upgrades.med || 0);
           c.healRate = MEDIC_BASE_HEAL * (1 + lvl * UPGRADES.med.effectPerLevel);
@@ -999,6 +1014,22 @@ function renderUpgradePanelContent(selectedCrew) {
 
     const c = selectedCrew;
 
+    // Engineer-only UI block
+    const engineerUpgradesHTML = c.role === 'Engineer' ? `
+        <div class="upgrade">
+            <div>
+                <div style="font-weight:700">${UPGRADES.engineer.name} (Level ${c.upgrades.engineer})</div>
+                <div class="small-muted">${UPGRADES.engineer.description}</div>
+            </div>
+            <div style="text-align:right">
+                <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('engineer', c.upgrades.engineer)}</span></div>
+                <div style="margin-top:8px">
+                    <button data-action="buy" data-id="${c.id}" data-type="engineer">Buy</button>
+                </div>
+            </div>
+        </div>
+    ` : '';
+
     // Only show medic upgrades if the crew member is a Medic
     const medUpgradesHTML = c.role === 'Medic' ? `
         <div class="upgrade">
@@ -1068,11 +1099,13 @@ function renderUpgradePanelContent(selectedCrew) {
             </div>
 
             ${medUpgradesHTML}
+            ${engineerUpgradesHTML}
         </div>
 
         <div style="margin-top:12px" class="small-muted">
             Current: Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%
             ${c.role === 'Medic' ? '• Heal rate: ' + (c.healRate || 0).toFixed(2) + ' HP/s' + (c.upgrades.autoHeal ? ' • Auto-Heal: ON' : '') : ''}
+            ${c.role === 'Engineer' ? ' • Field Expertise lvl: ' + (c.upgrades.engineer || 0) : ''}
         </div>
     `;
 
@@ -1269,20 +1302,35 @@ function renderUpgradePanelContent(selectedCrew) {
           }
         });
 
-        // ---------- Medic auto-heal behavior (new) ----------
+        // ---------- Medic auto-heal behavior (updated) ----------
         const medic = crew.find(x=>x.role==='Medic');
 
         // If Medic is idle and has AutoHeal upgrade, find an idle wounded crew and start healing them
         if (medic && (!medic.repairing) && (medic.upgrades && medic.upgrades.autoHeal > 0)){
-          // find idle crew (not medic) who aren't assigned and are wounded
-          const candidates = crew.filter(c => c.id !== medic.id && c.health > 0 && c.health < c.maxHealth && (!c.repairing));
+          // allow medic to auto-heal themself if autoHeal level is 2 or more
+          const allowSelfHeal = (medic.upgrades.autoHeal || 0) >= 2;
+
+          // find idle wounded crew (include medic if allowSelfHeal)
+          const candidates = crew.filter(c => {
+            const wounded = c.health > 0 && c.health < c.maxHealth;
+            const idle = !c.repairing;
+            if (!wounded || !idle) return false;
+            if (c.id === medic.id) return allowSelfHeal;
+            return true;
+          });
+
           if (candidates.length > 0){
-            // pick the lowest health idle crew
+            // pick the lowest-health idle crew (relative percent)
             candidates.sort((a,b)=> (a.health / a.maxHealth) - (b.health / b.maxHealth));
             const target = candidates[0];
             medic.repairing = 'healing:' + target.id;
             medic.healTarget = target.id;
-            broadcastEvent(`Medic auto-healing ${target.name}`);
+            // message differs when medic heals themself
+            if (target.id === medic.id) {
+              broadcastEvent(`Medic auto-healing themself`);
+            } else {
+              broadcastEvent(`Medic auto-healing ${target.name}`);
+            }
             anyChange = true;
           }
         }

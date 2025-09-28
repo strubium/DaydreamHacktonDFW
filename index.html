@@ -996,27 +996,98 @@ document.addEventListener('click', (e) => {
         });
       }
 
-      function renderEventList(){
-        const el = document.getElementById('eventLog');
-        el.innerHTML = '';
-        activeEvents.slice().reverse().forEach(ev=>{
-          const rem = Math.max(0, Math.round(ev.duration - ((Date.now()/1000) - ev.startedAt)));
-          const badge = document.createElement('div');
-          badge.className = 'event-badge ' + (ev.type === 'fire' || ev.type==='hullBreach' ? 'event-danger' : (ev.type==='calmWaters' ? 'event-good':'event-muted'));
-          const targetText = ev.target ? (' — ' + (tasks.find(t=>t.id===ev.target)?.title || ev.target)) : '';
-          badge.innerHTML = `<strong>${EVENT_DEFS[ev.type].name}</strong>${targetText} ${ev.duration>0 ? `<div style="font-size:12px;color:var(--muted)">(${rem}s)</div>` : ''}`;
-          // extinguish button for fire events at the top-level also
-          if (ev.type === 'fire'){
-            const btn = document.createElement('button');
-            btn.className = 'small';
-            btn.textContent = 'Extinguish (10)';
-            btn.style.marginLeft = '8px';
-            btn.onclick = (e)=> { e.stopPropagation(); extinguishEvent(ev.id); };
-            badge.appendChild(btn);
-          }
-          el.appendChild(badge);
-        });
-      }
+ // Define icons for each event type
+const EVENT_ICONS = {
+  fire: '🔥',
+  hullBreach: '💥',
+  calmWaters: '🌊',
+  electrical: '⚡',
+  supplyCache: '📦',
+};
+
+// CSS animation for danger events
+const style = document.createElement('style');
+style.textContent = `
+.event-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+.event-badge span.icon {
+  margin-right: 6px;
+}
+.event-danger {
+  background: #4d0c0c;
+  color: #fff;
+  font-weight: 700;
+  animation: pulse 1s infinite;
+}
+.event-good {
+  background: #0c4d0c;
+  color: #fff;
+}
+.event-muted {
+  background: #333;
+  color: #ccc;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.small-muted {
+  font-size: 12px;
+  color: var(--muted);
+}
+button.small {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+`;
+document.head.appendChild(style);
+
+function renderEventList() {
+  const el = document.getElementById('eventLog');
+  el.innerHTML = '';
+
+  // Reverse chronological order
+  activeEvents.slice().reverse().forEach(ev => {
+    const rem = Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)));
+    const badge = document.createElement('div');
+    badge.className = 'event-badge ' +
+      (ev.type === 'fire' || ev.type === 'hullBreach' ? 'event-danger' :
+       (ev.type === 'calmWaters' ? 'event-good' : 'event-muted'));
+
+    const icon = EVENT_ICONS[ev.type] || '❔';
+    const targetText = ev.target ? (' — ' + (tasks.find(t => t.id === ev.target)?.title || ev.target)) : '';
+
+    badge.innerHTML = `
+      <span class="icon">${icon}</span>
+      <div>
+        <strong>${EVENT_DEFS[ev.type].name}</strong>${targetText}
+        ${ev.duration > 0 ? `<div class="small-muted">(${rem}s)</div>` : ''}
+      </div>
+    `;
+
+    // Add extinguish button for fire events
+    if (ev.type === 'fire') {
+      const btn = document.createElement('button');
+      btn.className = 'small';
+      btn.textContent = 'Extinguish (10)';
+      btn.onclick = (e) => { e.stopPropagation(); extinguishEvent(ev.id); };
+      badge.appendChild(btn);
+    }
+
+    el.appendChild(badge);
+  });
+}
+
 
 function renderUpgradePanelContent(selectedCrew) {
     if (!selectedCrew) {

@@ -384,41 +384,53 @@ document.addEventListener('click', (e) => {
     }
 
     async function startAudio() {
-        // Disable button
-        document.getElementById('btn-start').disabled = true;
+    // Disable button
+    document.getElementById('btn-start').disabled = true;
 
-        // files expected in same folder
-        try {
-          waterBuffer = await loadAudio('loudwaterrushing.mp3');  // ambient
-          musicBuffer = await loadAudio('biggering-original-demo.mp3');  // music
-        } catch(e){
-          // audio optional — continue silently if missing
-          console.warn('Audio load failed', e);
-        }
-
-        if (waterBuffer){
-          const waterSource = audioContext.createBufferSource();
-          const waterGain = audioContext.createGain();
-          waterGain.gain.value = 0.5; // 50% volume
-          waterSource.buffer = waterBuffer;
-          waterSource.loop = true;
-          waterSource.connect(waterGain).connect(audioContext.destination);
-          waterSource.start();
-        }
-
-        if (musicBuffer){
-          const musicSource = audioContext.createBufferSource();
-          musicSource.buffer = musicBuffer;
-
-          const musicGain2 = audioContext.createGain();
-          musicGain2.gain.value = 0;  // start muted
-          musicSource.connect(musicGain2).connect(audioContext.destination);
-          musicSource.start();
-
-          setTimeout(() => fadeGain(musicGain2, 0, 0.3, 5), 2000);   // fade in after 2s
-          setTimeout(() => fadeGain(musicGain2, 0.3, 0, 5), 17000); // fade out after 17s
-        }
+    // files expected in same folder
+    try {
+      waterBuffer = await loadAudio('loudwaterrushing.mp3');  // ambient
+      musicBuffer = await loadAudio('28006303.mp3');  // music
+    } catch(e){
+      // audio optional — continue silently if missing
+      console.warn('Audio load failed', e);
     }
+
+    // Water (loop forever, steady volume)
+    if (waterBuffer){
+      const waterSource = audioContext.createBufferSource();
+      const waterGain = audioContext.createGain();
+      waterGain.gain.value = 0.2; // 50% volume
+      waterSource.buffer = waterBuffer;
+      waterSource.loop = true;
+      waterSource.connect(waterGain).connect(audioContext.destination);
+      waterSource.start();
+    }
+
+    // Music (fade in/out cycle)
+    if (musicBuffer){
+      const musicSource = audioContext.createBufferSource();
+      const musicGain = audioContext.createGain();
+      musicGain.gain.value = 0;  // start muted
+
+      musicSource.buffer = musicBuffer;
+      musicSource.loop = true;
+      musicSource.connect(musicGain).connect(audioContext.destination);
+      musicSource.start();
+
+      // Fade loop
+      function scheduleFades() {
+        // fade in
+        fadeGain(musicGain, 0, 0.3, 5);
+        // fade out after 15s
+        setTimeout(() => fadeGain(musicGain, 0.3, 0, 5), 15000);
+      }
+
+      // Run the loop every 30s (5s fade in + 10s hold + 5s fade out + 10s silence)
+      scheduleFades();
+      setInterval(scheduleFades, 30000);
+    }
+}
 
     // Button triggers audio context resume + playback
     document.getElementById('btn-start').addEventListener('click', () => {

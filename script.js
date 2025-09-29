@@ -274,7 +274,7 @@
               if (t){
                 t.progress = (typeof saved.progress === 'number') ? saved.progress : t.progress;
                 t.complete = !!saved.complete;
-                if (t.complete) t.progress = t.baseTime;
+                if (t.complete) t.progress = t.baseTime * TASK_TIME_MULT;
               }
             }
           }

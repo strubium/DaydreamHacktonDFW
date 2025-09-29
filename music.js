@@ -219,6 +219,62 @@ document.addEventListener('click', (e) => {
     }
   }
 
+  function playCrewDeathSound(detail){
+    try {
+      if (audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+      const now = audioContext.currentTime;
+
+      // master envelope
+      const master = audioContext.createGain();
+      master.gain.setValueAtTime(0.001, now);
+      master.gain.linearRampToValueAtTime(0.7, now + 0.02);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+      master.connect(audioContext.destination);
+
+      // low "falling" tone
+      const osc = audioContext.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+
+      const g = audioContext.createGain();
+      g.gain.setValueAtTime(0.8, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+      osc.connect(g).connect(master);
+      osc.start(now);
+      osc.stop(now + 1.3);
+
+      // short burst of noise for impact
+      const dur = 0.15;
+      const buf = audioContext.createBuffer(1, Math.floor(audioContext.sampleRate * dur), audioContext.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const env = 1 - (i / data.length);
+        data[i] = (Math.random() * 2 - 1) * env * 0.6;
+      }
+      const src = audioContext.createBufferSource();
+      src.buffer = buf;
+      const ng = audioContext.createGain();
+      ng.gain.setValueAtTime(0.7, now);
+      ng.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(ng).connect(master);
+      src.start(now);
+      src.stop(now + dur);
+
+    } catch (err) {
+      console.warn('playCrewDeathSound failed', err);
+    }
+  }
+
+    window.addEventListener('crewDied', (e) => {
+      try {
+        playCrewDeathSound(e && e.detail);
+      } catch (err) {
+        console.warn('crewDied handler failed', err);
+      }
+    });
+
   // Listen for a CustomEvent('taskCompleted') — detail can include { id, title, reward }
   window.addEventListener('taskCompleted', (e) => {
     try {

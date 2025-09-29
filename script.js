@@ -404,79 +404,106 @@
       }
       // --- end: scheduled render helper ---
 
-      function renderCrew(){
-        crewContainer.innerHTML = '';
+    let deadCrewIds = new Set();
+
+    function renderCrew() {
+      crewContainer.innerHTML = '';
         crew.forEach(c => {
-          const medic = crew.find(x=>x.role==='Medic');
-          const isHealingTarget = medic && medic.repairing === ('healing:' + c.id);
-          const medicIsHealing = medic && medic.repairing && medic.repairing.startsWith('healing:');
-          const isWorking = !!(c.repairing && !c.repairing.startsWith('healing:') && c.health > 0);
+          const wasDead = deadCrewIds.has(c.id);
+          const isDead = c.health <= 0;
 
-          // Avatar background changes when working
-          const avatarBg = isWorking ? 'linear-gradient(90deg,var(--accent),#1f7fb0)' : '#081018';
-
-          const el = document.createElement('div');
-          el.className = 'crew';
-          // highlight card border/background when working
-          if (isWorking){
-            el.style.border = '1px solid rgba(43,179,255,0.12)';
-            el.style.boxShadow = '0 6px 20px rgba(43,179,255,0.04)';
-            el.style.background = 'linear-gradient(180deg,#071018,#041015)';
-          } else {
-            el.style.border = '';
-            el.style.boxShadow = '';
-            el.style.background = '';
+          if (isDead && !wasDead) {
+            deadCrewIds.add(c.id);
+            window.dispatchEvent(new CustomEvent('crewDied', { detail: { id: c.id, name: c.name } }));
+          } else if (!isDead && wasDead) {
+            deadCrewIds.delete(c.id);
           }
+        const medic = crew.find(x => x.role === 'Medic');
+        const isHealingTarget = medic && medic.repairing === ('healing:' + c.id);
+        const medicIsHealing = medic && medic.repairing && medic.repairing.startsWith('healing:');
+        const isWorking = !!(c.repairing && !c.repairing.startsWith('healing:') && c.health > 0);
 
-          el.innerHTML = `
-            <div style="width:52px;height:52px;border-radius:8px;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-weight:700">${c.name.split(' ')[0][0]}</div>
-            <div style="flex:1">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <div>
-                  <div class="name">${c.name}</div>
-                  <div class="small-muted">${c.role}</div>
-                </div>
-                <div style="text-align:right">
-                  <div class="small-muted">HP</div>
-                  <div class="stat">${Math.max(0, Math.round(c.health))}/${c.maxHealth}</div>
-                </div>
+        // Avatar background
+        const avatarBg = isDead
+          ? '#330000'
+          : isWorking
+            ? 'linear-gradient(90deg,var(--accent),#1f7fb0)'
+            : '#081018';
+
+        const el = document.createElement('div');
+        el.className = 'crew';
+
+        // style box
+        if (isDead) {
+          el.style.border = '1px solid rgba(255,0,0,0.25)';
+          el.style.background = 'linear-gradient(180deg,#220000,#110000)';
+          el.style.opacity = '0.6';
+        } else if (isWorking) {
+          el.style.border = '1px solid rgba(43,179,255,0.12)';
+          el.style.boxShadow = '0 6px 20px rgba(43,179,255,0.04)';
+          el.style.background = 'linear-gradient(180deg,#071018,#041015)';
+        } else {
+          el.style.border = '';
+          el.style.boxShadow = '';
+          el.style.background = '';
+        }
+
+        el.innerHTML = `
+          <div style="width:52px;height:52px;border-radius:8px;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-weight:700">
+            ${c.name.split(' ')[0][0]}
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div class="name">${c.name}</div>
+                <div class="small-muted">${c.role}${isDead ? ' • DEAD' : ''}</div>
               </div>
-
-              <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-                <div style="flex:1">
-                  <div class="health-bar"><i style="width:${Math.max(0, (c.health/c.maxHealth)*100)}%"></i></div>
-                </div>
-                <div style="width:120px;text-align:right">
-                  <button class="small" data-action="openUpgrades" data-id="${c.id}">Upgrades</button>
-                </div>
-              </div>
-
-              <div style="display:flex;gap:8px;margin-top:6px;align-items:center;justify-content:space-between">
-                <div class="small-muted">Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%</div>
-                <div>
-                  ${c.id !== 'med'
-                    ? `<button class="small" data-action="requestHeal" data-target="${c.id}">${isHealingTarget ? 'Stop Heal' : 'Heal'}</button>`
-                    : `${medicIsHealing ? `<span class="small-muted">Healing: ${crew.find(x=>x.id===medic.healTarget)?.name || '—'}</span>` : ''}`
-                  }
-                </div>
+              <div style="text-align:right">
+                <div class="small-muted">HP</div>
+                <div class="stat">${Math.max(0, Math.round(c.health))}/${c.maxHealth}</div>
               </div>
             </div>
-          `;
-          crewContainer.appendChild(el);
-        });
 
-        suppliesLabel.textContent = supplies;
-        // attach event listeners
-        crewContainer.querySelectorAll('[data-action="openUpgrades"]').forEach(btn=>{
-          btn.onclick = ()=> openUpgradeFor(btn.dataset.id);
-        });
-        crewContainer.querySelectorAll('[data-action="requestHeal"]').forEach(btn=>{
-          btn.onclick = ()=> {
-            const targetId = btn.dataset.target;
-            requestHeal(targetId);
-          };
-        });
-      }
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <div style="flex:1">
+                <div class="health-bar"><i style="width:${Math.max(0, (c.health / c.maxHealth) * 100)}%"></i></div>
+              </div>
+              <div style="width:120px;text-align:right">
+                ${isDead ? '' : `<button class="small" data-action="openUpgrades" data-id="${c.id}">Upgrades</button>`}
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:6px;align-items:center;justify-content:space-between">
+              <div class="small-muted">
+                ${isDead ? 'Unavailable' : `Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%`}
+              </div>
+              <div>
+                ${(!isDead && c.id !== 'med')
+                  ? `<button class="small" data-action="requestHeal" data-target="${c.id}">${isHealingTarget ? 'Stop Heal' : 'Heal'}</button>`
+                  : (!isDead && medicIsHealing
+                      ? `<span class="small-muted">Healing: ${crew.find(x=>x.id===medic.healTarget)?.name || '—'}</span>`
+                      : '')
+                }
+              </div>
+            </div>
+          </div>
+        `;
+        crewContainer.appendChild(el);
+      });
+
+      suppliesLabel.textContent = supplies;
+
+      // attach events only for alive crew
+      crewContainer.querySelectorAll('[data-action="openUpgrades"]').forEach(btn => {
+        btn.onclick = () => openUpgradeFor(btn.dataset.id);
+      });
+      crewContainer.querySelectorAll('[data-action="requestHeal"]').forEach(btn => {
+        btn.onclick = () => {
+          const targetId = btn.dataset.target;
+          requestHeal(targetId);
+        };
+      });
+    }
 
       function renderTasks(){
         tasksContainer.innerHTML = '';

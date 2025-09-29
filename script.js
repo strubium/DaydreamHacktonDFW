@@ -61,7 +61,6 @@
       const crew = [
         { id:'capt', name:'Anthony (Capt)', role:'Captain', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
         { id:'xo', name:'John (XO)', role:'XO', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
-        // Engineer (Gabe) — has an engineer-specific upgrade slot
         { id:'eo', name:'Gabe (EO)', role:'Engineer', health:90, maxHealth:100, repairing:null, repairSpeedMult:1.6, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
         { id:'med', name:'Rin (Medic)', role:'Medic', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, healRate:MEDIC_BASE_HEAL, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0}, healTarget:null },
       ];
@@ -92,22 +91,24 @@
         },
         med: {
           name: 'Med Training',
-          description: 'Increase Medic healing rate by +50% of base per level (applies to Medic only).',
+          description: 'Increase Medic healing rate by +50% of base per level.',
           costBase: 30,
-          effectPerLevel: 0.5
+          effectPerLevel: 0.5,
+          roleRestriction: 'Medic' // only Medic can buy
         },
         autoHeal: {
           name: 'Auto-Heal Module',
-          description: 'When equipped on the Medic, they will automatically heal idle crew members when the Medic is not doing anything. (Medic must be alive and idle.)',
+          description: 'Automatically heal idle crew members when the Medic is idle.',
           costBase: 40,
-          effectPerLevel: 0 // effect is binary: level > 0 enables auto-heal; higher levels may be used for future enhancements
+          effectPerLevel: 0,
+          roleRestriction: 'Medic'
         },
-        // --- Engineer-only upgrade ---
         engineer: {
           name: 'Field Expertise',
-          description: 'Engineers gain +25% repair speed per level (stacks with Tool Kit). Exclusive to the Engineer.',
+          description: 'Engineers gain +25% repair speed per level.',
           costBase: 35,
-          effectPerLevel: 0.25
+          effectPerLevel: 0.25,
+          roleRestriction: 'Engineer'
         }
       };
 
@@ -632,117 +633,59 @@ function renderEventList() {
 }
 
 
-function renderUpgradePanelContent(selectedCrew) {
-    if (!selectedCrew) {
+    function renderUpgradePanelContent(selectedCrew) {
+      if (!selectedCrew) {
         upgradePanel.innerHTML = `<p class="small-muted">Select a crew to view/purchase upgrades.</p>`;
         return;
-    }
+      }
 
-    const c = selectedCrew;
-
-    // Engineer-only UI block
-    const engineerUpgradesHTML = c.role === 'Engineer' ? `
-        <div class="upgrade">
+      const c = selectedCrew;
+      const upgradeHTML = Object.entries(UPGRADES)
+        .filter(([key, upg]) => !upg.roleRestriction || upg.roleRestriction === c.role)
+        .map(([key, upg]) => `
+          <div class="upgrade">
             <div>
-                <div style="font-weight:700">${UPGRADES.engineer.name} (Level ${c.upgrades.engineer})</div>
-                <div class="small-muted">${UPGRADES.engineer.description}</div>
+              <div style="font-weight:700">${upg.name} (Level ${c.upgrades[key]})</div>
+              <div class="small-muted">${upg.description}</div>
             </div>
             <div style="text-align:right">
-                <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('engineer', c.upgrades.engineer)}</span></div>
-                <div style="margin-top:8px">
-                    <button data-action="buy" data-id="${c.id}" data-type="engineer">Buy</button>
-                </div>
+              <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost(key, c.upgrades[key])}</span></div>
+              <div style="margin-top:8px">
+                <button data-action="buy" data-id="${c.id}" data-type="${key}">Buy</button>
+              </div>
             </div>
-        </div>
-    ` : '';
+          </div>
+        `).join('');
 
-    // Only show medic upgrades if the crew member is a Medic
-    const medUpgradesHTML = c.role === 'Medic' ? `
-        <div class="upgrade">
-            <div>
-                <div style="font-weight:700">${UPGRADES.med.name} (Level ${c.upgrades.med})</div>
-                <div class="small-muted">${UPGRADES.med.description}</div>
-            </div>
-            <div style="text-align:right">
-                <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('med', c.upgrades.med)}</span></div>
-                <div style="margin-top:8px">
-                    <button data-action="buy" data-id="${c.id}" data-type="med">Buy</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="upgrade">
-            <div>
-                <div style="font-weight:700">${UPGRADES.autoHeal.name} (Level ${c.upgrades.autoHeal})</div>
-                <div class="small-muted">${UPGRADES.autoHeal.description}</div>
-            </div>
-            <div style="text-align:right">
-                <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('autoHeal', c.upgrades.autoHeal)}</span></div>
-                <div style="margin-top:8px">
-                    <button data-action="buy" data-id="${c.id}" data-type="autoHeal">Buy</button>
-                </div>
-            </div>
-        </div>
-    ` : '';
-
-    upgradePanel.innerHTML = `
+      upgradePanel.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-                <h3 style="margin:0">${c.name}</h3>
-                <div class="small-muted">${c.role}</div>
-            </div>
-            <div style="text-align:right">
-                <div class="small-muted">Supplies</div>
-                <div class="currency">${supplies}</div>
-            </div>
+          <div>
+            <h3 style="margin:0">${c.name}</h3>
+            <div class="small-muted">${c.role}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="small-muted">Supplies</div>
+            <div class="currency">${supplies}</div>
+          </div>
         </div>
 
         <div style="margin-top:10px" class="upgrade-list">
-            <div class="upgrade">
-                <div>
-                    <div style="font-weight:700">${UPGRADES.speed.name} (Level ${c.upgrades.speed})</div>
-                    <div class="small-muted">${UPGRADES.speed.description}</div>
-                </div>
-                <div style="text-align:right">
-                    <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('speed', c.upgrades.speed)}</span></div>
-                    <div style="margin-top:8px">
-                        <button data-action="buy" data-id="${c.id}" data-type="speed">Buy</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="upgrade">
-                <div>
-                    <div style="font-weight:700">${UPGRADES.armor.name} (Level ${c.upgrades.armor})</div>
-                    <div class="small-muted">${UPGRADES.armor.description}</div>
-                </div>
-                <div style="text-align:right">
-                    <div class="small-muted">Cost: <span class="stat">${calcUpgradeCost('armor', c.upgrades.armor)}</span></div>
-                    <div style="margin-top:8px">
-                        <button data-action="buy" data-id="${c.id}" data-type="armor">Buy</button>
-                    </div>
-                </div>
-            </div>
-
-            ${medUpgradesHTML}
-            ${engineerUpgradesHTML}
+          ${upgradeHTML}
         </div>
 
         <div style="margin-top:12px" class="small-muted">
-            Current: Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%
-            ${c.role === 'Medic' ? '• Heal rate: ' + (c.healRate || 0).toFixed(2) + ' HP/s' + (c.upgrades.autoHeal ? ' • Auto-Heal: ON' : '') : ''}
-            ${c.role === 'Engineer' ? ' • Field Expertise lvl: ' + (c.upgrades.engineer || 0) : ''}
+          Current: Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%
+          ${c.role === 'Medic' ? '• Heal rate: ' + (c.healRate || 0).toFixed(2) + ' HP/s' + (c.upgrades.autoHeal ? ' • Auto-Heal: ON' : '') : ''}
+          ${c.role === 'Engineer' ? ' • Field Expertise lvl: ' + (c.upgrades.engineer || 0) : ''}
         </div>
-    `;
+      `;
 
-    upgradePanel.querySelectorAll('[data-action="buy"]').forEach(btn => {
+      upgradePanel.querySelectorAll('[data-action="buy"]').forEach(btn => {
         btn.onclick = () => {
-            const crewId = btn.dataset.id;
-            const type = btn.dataset.type;
-            purchaseUpgrade(crewId, type);
+          purchaseUpgrade(btn.dataset.id, btn.dataset.type);
         };
-    });
-}
+      });
+    }
 
 
       function renderAll(){

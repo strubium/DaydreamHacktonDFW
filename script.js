@@ -1,4 +1,5 @@
-
+// Alan idea: fires are a another task for that room that us must put out in order to start repairing it.
+// On hard+ fires can spread to other rooms if not taken care off
 
     (function(){
       // ---------- Difficulty system ----------

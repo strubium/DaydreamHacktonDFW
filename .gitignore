@@ -1,0 +1,4 @@
+/nwjs-sdk-v0.82.0-win-x64
+*.zip
+/dist
+/build

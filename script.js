@@ -1,171 +1,4 @@
-   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    let waterBuffer, musicBuffer;
-
-    let clickBuffer = null;
-
-function createClickBuffer() {
-  const sr = audioContext.sampleRate;
-  const dur = 0.035; // 35ms click
-  const len = Math.floor(sr * dur);
-  const buf = audioContext.createBuffer(1, len, sr);
-  const data = buf.getChannelData(0);
-  // white-noise burst with quick decay
-  for (let i = 0; i < len; i++) {
-    const env = 1 - (i / len); // linear decay
-    data[i] = (Math.random() * 2 - 1) * env * 0.6; // scale down amplitude
-  }
-  return buf;
-}
-
-function playClick() {
-  // ensure AudioContext is running (some browsers require user gesture)
-  if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(()=>{ /* ignore */ });
-  }
-
-  if (!clickBuffer) clickBuffer = createClickBuffer();
-
-  const src = audioContext.createBufferSource();
-  src.buffer = clickBuffer;
-
-  const gain = audioContext.createGain();
-  const t = audioContext.currentTime;
-
-  // quick envelope for a tight click
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.linearRampToValueAtTime(0.6, t + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-
-  src.connect(gain).connect(audioContext.destination);
-  src.start(t);
-  // stop after buffer length + small margin
-  src.stop(t + 0.06);
-}
-
-function playWinSound() {
-  // ensure context running
-  if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(()=>{});
-  }
-
-  const now = audioContext.currentTime;
-  // master gain for overall shaping (short swell + decay)
-  const master = audioContext.createGain();
-  master.gain.setValueAtTime(0.0001, now);
-  master.gain.linearRampToValueAtTime(0.9, now + 0.04);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
-  master.connect(audioContext.destination);
-
-  // bright arpeggio notes (C5, E5, G5)
-  const freqs = [523.25, 659.25, 783.99];
-  freqs.forEach((freq, i) => {
-    const start = now + i * 0.12; // stagger notes slightly
-    const osc = audioContext.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, start);
-
-    // small note gain with per-note envelope
-    const g = audioContext.createGain();
-    g.gain.setValueAtTime(0.0001, start);
-    g.gain.linearRampToValueAtTime(0.6, start + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, start + 1.6);
-
-    // gentle detuned saw layer for warmth (optional)
-    const osc2 = audioContext.createOscillator();
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(freq * 0.9995, start); // tiny detune
-    const g2 = audioContext.createGain();
-    g2.gain.setValueAtTime(0.0001, start);
-    g2.gain.linearRampToValueAtTime(0.14, start + 0.02);
-    g2.gain.exponentialRampToValueAtTime(0.0001, start + 1.6);
-
-    // connect and play
-    osc.connect(g).connect(master);
-    osc2.connect(g2).connect(master);
-    osc.start(start);
-    osc.stop(start + 1.7);
-    osc2.start(start);
-    osc2.stop(start + 1.7);
-  });
-}
-
-// play on any button click (delegated)
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  if (btn.disabled) return;
-  // optionally suppress clicks on elements with data-no-click attribute
-  if (btn.closest('[data-no-click]')) return;
-  playClick();
-});
-
-    // Load audio file
-    async function loadAudio(url) {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        return await audioContext.decodeAudioData(arrayBuffer);
-    }
-
-    // Fade helper
-    function fadeGain(gainNode, from, to, duration) {
-        gainNode.gain.setValueAtTime(from, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(to, audioContext.currentTime + duration);
-    }
-
-    async function startAudio() {
-    // Disable button
-    document.getElementById('btn-start').disabled = true;
-
-    // files expected in same folder
-    try {
-      waterBuffer = await loadAudio('loudwaterrushing.mp3');  // ambient
-      musicBuffer = await loadAudio('28006303.mp3');  // music
-    } catch(e){
-      // audio optional — continue silently if missing
-      console.warn('Audio load failed', e);
-    }
-
-    // Water (loop forever, steady volume)
-    if (waterBuffer){
-      const waterSource = audioContext.createBufferSource();
-      const waterGain = audioContext.createGain();
-      waterGain.gain.value = 0.2; // 50% volume
-      waterSource.buffer = waterBuffer;
-      waterSource.loop = true;
-      waterSource.connect(waterGain).connect(audioContext.destination);
-      waterSource.start();
-    }
-
-    // Music (fade in/out cycle)
-    if (musicBuffer){
-      const musicSource = audioContext.createBufferSource();
-      const musicGain = audioContext.createGain();
-      musicGain.gain.value = 0;  // start muted
-
-      musicSource.buffer = musicBuffer;
-      musicSource.loop = true;
-      musicSource.connect(musicGain).connect(audioContext.destination);
-      musicSource.start();
-
-      // Fade loop
-      function scheduleFades() {
-        // fade in
-        fadeGain(musicGain, 0, 0.3, 5);
-        // fade out after 15s
-        setTimeout(() => fadeGain(musicGain, 0.3, 0, 5), 15000);
-      }
-
-      // Run the loop every 30s (5s fade in + 10s hold + 5s fade out + 10s silence)
-      scheduleFades();
-      setInterval(scheduleFades, 30000);
-    }
-}
-
-    // Button triggers audio context resume + playback
-    document.getElementById('btn-start').addEventListener('click', () => {
-        audioContext.resume().then(startAudio);
-    });
 
     (function(){
       // ---------- Difficulty system ----------
@@ -1064,6 +897,19 @@ function renderUpgradePanelContent(selectedCrew) {
               t.assigned = null;
             }
             broadcastEvent(`${t.title} repaired!`);
+
+            // Task complete sound
+            const evDetail = { id: t.id, title: t.title, reward: reward };
+              // If the sound script is loaded, this will fire and the listener plays immediately.
+              // If the sound script hasn't loaded yet, queue it so the sound script can pick it up on init.
+              if (typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('taskCompleted', { detail: evDetail }));
+              } else {
+                // extremely unlikely fallback: queue
+                window._queuedTaskCompletedEvents = window._queuedTaskCompletedEvents || [];
+                window._queuedTaskCompletedEvents.push(evDetail);
+              }
+
             anyChange = true;
           }
         });

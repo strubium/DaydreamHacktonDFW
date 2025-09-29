@@ -588,51 +588,50 @@
         });
       }
 
- // Define icons for each event type
-const EVENT_ICONS = {
-  fire: '🔥',
-  hullBreach: '💥',
-  calmWaters: '🌊',
-  electrical: '⚡',
-  supplyCache: '📦',
-};
+     // Define icons for each event type
+    const EVENT_ICONS = {
+      fire: '🔥',
+      hullBreach: '💥',
+      calmWaters: '🌊',
+      electrical: '⚡',
+      supplyCache: '📦',
+    };
 
-function renderEventList() {
-  const el = document.getElementById('eventLog');
-  el.innerHTML = '';
+    function renderEventList() {
+      const el = document.getElementById('eventLog');
+      el.innerHTML = '';
 
-  // Reverse chronological order
-  activeEvents.slice().reverse().forEach(ev => {
-    const rem = Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)));
-    const badge = document.createElement('div');
-    badge.className = 'event-badge ' +
-      (ev.type === 'fire' || ev.type === 'hullBreach' ? 'event-danger' :
-       (ev.type === 'calmWaters' ? 'event-good' : 'event-muted'));
+      // Reverse chronological order
+      activeEvents.slice().reverse().forEach(ev => {
+        const rem = Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)));
+        const badge = document.createElement('div');
+        badge.className = 'event-badge ' +
+          (ev.type === 'fire' || ev.type === 'hullBreach' ? 'event-danger' :
+           (ev.type === 'calmWaters' ? 'event-good' : 'event-muted'));
 
-    const icon = EVENT_ICONS[ev.type] || '❔';
-    const targetText = ev.target ? (' — ' + (tasks.find(t => t.id === ev.target)?.title || ev.target)) : '';
+        const icon = EVENT_ICONS[ev.type] || '❔';
+        const targetText = ev.target ? (' — ' + (tasks.find(t => t.id === ev.target)?.title || ev.target)) : '';
 
-    badge.innerHTML = `
-      <span class="icon">${icon}</span>
-      <div>
-        <strong>${EVENT_DEFS[ev.type].name}</strong>${targetText}
-        ${ev.duration > 0 ? `<div class="small-muted">(${rem}s)</div>` : ''}
-      </div>
-    `;
+        badge.innerHTML = `
+          <span class="icon">${icon}</span>
+          <div>
+            <strong>${EVENT_DEFS[ev.type].name}</strong>${targetText}
+            ${ev.duration > 0 ? `<div class="small-muted">(${rem}s)</div>` : ''}
+          </div>
+        `;
 
-    // Add extinguish button for fire events
-    if (ev.type === 'fire') {
-      const btn = document.createElement('button');
-      btn.className = 'small';
-      btn.textContent = 'Extinguish (10)';
-      btn.onclick = (e) => { e.stopPropagation(); extinguishEvent(ev.id); };
-      badge.appendChild(btn);
+        // Add extinguish button for fire events
+        if (ev.type === 'fire') {
+          const btn = document.createElement('button');
+          btn.className = 'small';
+          btn.textContent = 'Extinguish (10)';
+          btn.onclick = (e) => { e.stopPropagation(); extinguishEvent(ev.id); };
+          badge.appendChild(btn);
+        }
+
+        el.appendChild(badge);
+      });
     }
-
-    el.appendChild(badge);
-  });
-}
-
 
     function renderUpgradePanelContent(selectedCrew) {
       if (!selectedCrew) {

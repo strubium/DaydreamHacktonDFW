@@ -267,6 +267,63 @@ document.addEventListener('click', (e) => {
     }
   }
 
+  function playPopupSound() {
+    try {
+      if (audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+      const now = audioContext.currentTime;
+
+      // master gain envelope
+      const master = audioContext.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.linearRampToValueAtTime(0.7, now + 0.01);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      master.connect(audioContext.destination);
+
+      // oscillator for pluck (short, bright blip)
+      const osc = audioContext.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(660, now);  // start mid-high
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.2); // upward pitch sweep
+
+      // envelope per note
+      const g = audioContext.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.5, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+
+      osc.connect(g).connect(master);
+      osc.start(now);
+      osc.stop(now + 0.35);
+
+      // optional tiny noise "pop" layer
+      const dur = 0.05;
+      const buf = audioContext.createBuffer(1, Math.floor(audioContext.sampleRate * dur), audioContext.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const env = 1 - (i / data.length);
+        data[i] = (Math.random() * 2 - 1) * env * 0.2;
+      }
+      const src = audioContext.createBufferSource();
+      src.buffer = buf;
+      const ng = audioContext.createGain();
+      ng.gain.setValueAtTime(0.4, now);
+      ng.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(ng).connect(master);
+      src.start(now);
+      src.stop(now + dur);
+    } catch (err) {
+      console.warn('playPopupSound failed', err);
+    }
+  }
+
+  window.addEventListener('popUp', (e) => {
+        try {
+          playPopupSound();
+        } catch (err) {
+          console.warn('popUp handler failed', err);
+        }
+      });
+
     window.addEventListener('crewDied', (e) => {
       try {
         playCrewDeathSound(e && e.detail);

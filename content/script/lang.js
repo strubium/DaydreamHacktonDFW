@@ -30,7 +30,7 @@
         escapeValue: false // important to allow HTML tags in translations
       },
       backend: {
-        loadPath: '/locales/{{lng}}.json'
+        loadPath: '/content/locales/{{lng}}.json'
       }
     }, function(err, t) {
       if (err) console.error('i18next init error:', err);

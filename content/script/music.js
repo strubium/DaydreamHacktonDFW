@@ -119,8 +119,8 @@ document.addEventListener('click', (e) => {
 
     // files expected in same folder
     try {
-      waterBuffer = await loadAudio('loudwaterrushing.mp3');  // ambient
-      musicBuffer = await loadAudio('28006303.mp3');  // music
+      waterBuffer = await loadAudio('sounds/thirdparty/loudwaterrushing.mp3');  // ambient
+      musicBuffer = await loadAudio('sounds/28006303.mp3');  // music
     } catch(e){
       // audio optional — continue silently if missing
       console.warn('Audio load failed', e);

@@ -15,6 +15,9 @@ html, body {
   color: #e9eef6;
   text-shadow: 0 0 4px rgba(43,179,255,0.5);
   image-rendering: pixelated;
+  width: 100vw;     /* full viewport width */
+  height: 100vh;    /* full viewport height */
+  overflow: hidden; /* prevent any scrolling */
 }
 
 .app {
@@ -130,6 +133,7 @@ button.small {
   margin-bottom: 8px;
   border-bottom: 1px solid var(--accent);
   padding-bottom: 4px;
+  overflow: hidden; /* prevent any scrolling */
 }
 
 .center-stage {

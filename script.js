@@ -830,6 +830,9 @@
         </div>`;
       }).join('');
 
+    // Update the topbar supplies
+    document.getElementById('supplies').textContent = supplies;
+
     upgradePanel.innerHTML =
       `<div style="display:flex;justify-content:space-between;align-items:center">
         <div>

@@ -235,3 +235,30 @@ button.small {
 .iu-toast-red .iu-close {
   color: #ff9c9c;
 }
+
+/* Make the event log a horizontal, no-wrap flex row */
+#eventLog {
+  display: flex;
+  flex-direction: row;    /* left -> right; we'll prepend new badges to appear on the left */
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;      /* allow scrolling if too many events */
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Make each badge inline-flex so they don't break into their own rows */
+.event-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;        /* don't shrink, don't grow */
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  min-width: 120px;      /* optional, tweak so badges keep a tidy shape */
+}
+.event-badge .icon { margin-right: 6px; }
+

@@ -920,12 +920,14 @@
    if (!el) return;
    el.innerHTML = '';
 
-   // Reverse chronological order
-   activeEvents.slice().reverse().forEach(ev => {
-     // Do NOT show fire events in the event log popup area.
+   // Iterate in chronological order and prepend to ensure newest ends up leftmost
+   activeEvents.forEach(ev => {
      if (ev.type === 'fire') return;
 
-     const rem = Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)));
+     const rem = (ev.duration > 0)
+       ? Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)))
+       : 0;
+
      const badge = document.createElement('div');
      badge.className = 'event-badge ' +
        (ev.type === 'hullBreach' ? 'event-danger' :
@@ -941,7 +943,8 @@
           ${ev.duration > 0 ? `<div class="small-muted">(${rem}s)</div>` : ''}
         </div>`;
 
-     el.appendChild(badge);
+     // Prepend so newest events occupy the leftmost slot in a left-to-right flex container
+     el.prepend(badge);
    });
  }
 

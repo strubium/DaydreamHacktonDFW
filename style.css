@@ -203,3 +203,22 @@ button.small {
   font-size: 12px;
   color: var(--muted);
 }
+#immersive-ui-root { position: fixed; inset: 0; pointer-events: none; z-index: 99999; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+/* Modal */
+#immersive-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+#immersive-modal.iu-hidden { display: none; }
+.iu-modal-backdrop { position: absolute; inset: 0; background: rgba(2,6,23,0.7); backdrop-filter: blur(2px); }
+.iu-modal-card { position: relative; width: min(560px, 92%); background: linear-gradient(180deg,#06121a,#031018); border: 1px solid rgba(255,255,255,0.04); padding: 18px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #e9f6ff; z-index: 2; }
+.iu-modal-header { margin-bottom: 8px; }
+.iu-title { font-weight: 700; font-size: 18px; }
+.iu-message { color: #c9e9ff; margin-bottom: 12px; white-space: pre-wrap; line-height: 1.4; }
+.iu-modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+.iu-btn { padding:8px 12px; border-radius:8px; border: none; cursor: pointer; font-weight:600; }
+.iu-btn:focus { outline: 2px solid rgba(100,180,255,0.3); outline-offset: 2px; }
+.iu-btn-cancel { background: transparent; color: #9fbfda; border: 1px solid rgba(159,191,218,0.08); }
+.iu-btn-confirm { background: linear-gradient(180deg,#2fbcff,#1e96d6); color: #02121a; box-shadow: 0 6px 18px rgba(46,153,219,0.12); }
+/* Toasts */
+#immersive-toasts { position: fixed; right: 20px; bottom: 24px; display:flex; flex-direction:column; gap:8px; z-index: 99999; pointer-events: none; width:320px; max-width: calc(100% - 48px); }
+.iu-toast { pointer-events: auto; background: linear-gradient(180deg,#071621,#041018); padding:10px 12px; border-radius:10px; color:#dff6ff; border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 8px 28px rgba(0,0,0,0.6); display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight:600;}
+.iu-toast .iu-close { background: transparent; border: none; color: #a7dff2; cursor: pointer; font-weight:700; }
+@media (max-width:480px) { #immersive-toasts { left: 12px; right: 12px; bottom: 14px; width:auto; } }

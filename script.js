@@ -279,7 +279,7 @@
       id: 'fire',
       name: 'Fire',
       description: 'A fire has started in a system — it must be extinguished before repairs can begin. Assign a crew member to fight it.',
-      duration: 18,
+      duration: 28,
       apply(meta){
         const t = tasks.find(x=>x.id === meta.target);
         if (!t) return;

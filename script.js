@@ -31,14 +31,18 @@
     if (!root) return;
     const el = document.createElement('div');
     el.className = 'iu-toast';
+    if (options.red) el.classList.add('iu-toast-red');
     el.innerHTML = `<div style="flex:1">${message}</div><button class="iu-close" title="Dismiss">✕</button>`;
     root.appendChild(el);
+
     const closeBtn = el.querySelector('.iu-close');
     let removed = false;
     const remove = () => { if (removed) return; removed = true; try { el.remove(); } catch(e){} };
     closeBtn.onclick = remove;
+
     const duration = (typeof options.duration === 'number') ? options.duration : 3500;
     if (duration > 0) setTimeout(remove, duration);
+
     return { remove };
   }
 
@@ -206,7 +210,7 @@
     },
     autoHeal: {
       name: 'Auto-Heal Module',
-      description: 'Automatically heal idle crew members when the Medic is idle.',
+      description: 'Automatically heal idle crew members when the Medic is idle. At level two, the medic will heal themselves',
       costBase: 40,
       effectPerLevel: 0,
       roleRestriction: 'Medic'
@@ -675,7 +679,7 @@
         // quick assign the healthiest alive crew who is not the Medic or is allowed
         const tId = btn.dataset.id;
         const candidates = crew.filter(c=>c.health>0 && c.repairing==null);
-        if (candidates.length===0) { showToast('No available crew alive to assign'); return; }
+        if (candidates.length===0) { showToast('No available crew to assign', { red: true}); return; }
         candidates.sort((a,b)=>b.health - a.health);
         assignCrewToTask(candidates[0].id, tId);
         renderTasks();
@@ -885,7 +889,7 @@
      const fires = activeEvents.filter(e=> e.type === 'fire' && e.target === taskId);
      if (fires.length === 0) return;
      const cost = 10;
-     if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')'); return; }
+     if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')', { red: true}); return; }
      const ok = await showConfirm('Spend ' + cost + ' supplies to extinguish the fire on ' + t.title + '?');
      if (!ok) return;
      supplies -= cost;
@@ -900,9 +904,9 @@
    async function extinguishEvent(eventId){
      const ev = activeEvents.find(e => e.id === eventId);
      if (!ev) return;
-     if (ev.type !== 'fire'){ showToast('Only fires can be manually extinguished.'); return; }
+     if (ev.type !== 'fire'){ showToast('Only fires can be manually extinguished.', { red: true}); return; }
      const cost = 10;
-     if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')'); return; }
+     if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')', { red: true}); return; }
      const ok = await showConfirm('Spend ' + cost + ' supplies to extinguish the fire?');
      if (!ok) return;
      supplies -= cost;
@@ -1187,7 +1191,7 @@
      if (!c) return;
      const cost = calcUpgradeCost(type, c.upgrades[type]);
      if (supplies < cost){
-       showToast('Not enough supplies. You need ' + cost + ' supplies.');
+       showToast('Not enough supplies. You need ' + (cost - supplies) + ' more supplies.', { red: true});
        return;
      }
      supplies -= cost;

@@ -222,3 +222,12 @@ button.small {
 .iu-toast { pointer-events: auto; background: linear-gradient(180deg,#071621,#041018); padding:10px 12px; border-radius:10px; color:#dff6ff; border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 8px 28px rgba(0,0,0,0.6); display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight:600;}
 .iu-toast .iu-close { background: transparent; border: none; color: #a7dff2; cursor: pointer; font-weight:700; }
 @media (max-width:480px) { #immersive-toasts { left: 12px; right: 12px; bottom: 14px; width:auto; } }
+.iu-toast-red {
+  background: linear-gradient(180deg, #3a0d0d, #220505);
+  border: 1px solid rgba(255, 80, 80, 0.5);
+  color: #ffdada;
+}
+
+.iu-toast-red .iu-close {
+  color: #ff9c9c;
+}

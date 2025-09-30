@@ -1,5 +1,3 @@
-// Alan idea: fires are a another task for that room that us must put out in order to start repairing it.
-// On hard+ fires can spread to other rooms if not taken care off
 (function(){
   // ---------- Immersive alert/toast UI ----------
   (function initImmersiveUI(){
@@ -172,19 +170,19 @@
   // crew definitions
   const crew = [
     { id:'capt', name:'Anthony (Capt)', role:'Captain', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
-    { id:'xo', name:'John (XO)', role:'XO', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
+    { id:'xo', name:'John (XO)', role:'XO', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0, fireSuppression:0} },
     { id:'eo', name:'Gabe (EO)', role:'Engineer', health:90, maxHealth:100, repairing:null, repairSpeedMult:1.6, damageReduction:0.0, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0} },
     { id:'med', name:'Rin (Medic)', role:'Medic', health:100, maxHealth:100, repairing:null, repairSpeedMult:1.0, damageReduction:0.0, healRate:MEDIC_BASE_HEAL, upgrades: {speed:0, armor:0, med:0, autoHeal:0, engineer:0}, healTarget:null },
   ];
 
   // tasks (we will multiply baseTime by TASK_TIME_MULT when using)
   const tasks = [
-    { id:'hull', title:'Hull Breach', baseTime: 57.0, progress:20, assigned:null, baseDamagePerSec:1.5, complete:false, eventDamageMult:1.0, eventSpeedMult:0.3, events:[] },
-    { id:'flood', title:'Flooding', baseTime: 24.0, progress:0, assigned:null, baseDamagePerSec:1, complete:false, eventDamageMult:1.0, eventSpeedMult:0.6, events:[] },
-    { id:'reactor', title:'Reactor Room', baseTime: 16.0, progress:0, assigned:null, baseDamagePerSec:6.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
-    { id:'command', title:'Command Systems', baseTime: 14.0, progress:0, assigned:null, baseDamagePerSec:5.0, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
-    { id:'sonar', title:'Sonar Array', baseTime: 12.0, progress:0, assigned:null, baseDamagePerSec:3.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
-    { id:'comms', title:'Communications', baseTime: 10.0, progress:0, assigned:null, baseDamagePerSec:2.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
+    { id:'hull', title:'Hull Breach', baseTime: 57.0, progress:20, assigned:null, extinguisherAssigned:null, baseDamagePerSec:1.5, complete:false, eventDamageMult:1.0, eventSpeedMult:0.3, events:[] },
+    { id:'flood', title:'Flooding', baseTime: 24.0, progress:0, assigned:null, extinguisherAssigned:null, baseDamagePerSec:1, complete:false, eventDamageMult:1.0, eventSpeedMult:0.6, events:[] },
+    { id:'reactor', title:'Reactor Room', baseTime: 16.0, progress:0, assigned:null, extinguisherAssigned:null, baseDamagePerSec:6.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
+    { id:'command', title:'Command Systems', baseTime: 14.0, progress:0, assigned:null, extinguisherAssigned:null, baseDamagePerSec:5.0, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
+    { id:'sonar', title:'Sonar Array', baseTime: 12.0, progress:0, assigned:null, extinguisherAssigned:null, baseDamagePerSec:3.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
+    { id:'comms', title:'Communications', baseTime: 10.0, progress:0, assigned:null, extinguisherAssigned:null, baseDamagePerSec:2.5, complete:false, eventDamageMult:1.0, eventSpeedMult:1.0, events:[] },
   ];
 
   // ---------- Upgrades ----------
@@ -195,7 +193,6 @@
       costBase: 20,
       applyTo: 'self',
       effects: [
-        // repairRate is applied as a fractional increase: level * perLevel added to repairSpeedMult
         { type: 'repairRate', perLevel: 0.10 }
       ]
     },
@@ -205,7 +202,6 @@
       costBase: 25,
       applyTo: 'self',
       effects: [
-        // damageRate here expresses percent damage reduction per level (0.08 == 8% less damage taken)
         { type: 'damageRate', perLevel: 0.08 }
       ]
     },
@@ -213,10 +209,9 @@
       name: 'Med Training',
       description: 'Increase Medic healing rate by +50% of base per level.',
       costBase: 30,
-      roleRestriction: 'Medic', // only Medic can buy
+      roleRestriction: 'Medic',
       applyTo: 'self',
       effects: [
-        // healRate is fractional of base medic heal (e.g. 0.5 adds +50% per level)
         { type: 'healRate', perLevel: 0.5 }
       ]
     },
@@ -227,8 +222,6 @@
       roleRestriction: 'Medic',
       applyTo: 'self',
       effects: [
-        // this is a special effect where we store the level as autoHealLevel on the medic;
-        // keep perLevel 1 for clarity but handled specially
         { type: 'autoHeal', perLevel: 1 }
       ]
     },
@@ -239,14 +232,24 @@
       roleRestriction: 'Engineer',
       applyTo: 'self',
       effects: [
-        // This is another repairRate effect but can only be purchased by engineers only
         { type: 'repairRate', perLevel: 0.25 }
+      ]
+    },
+    // NEW: XO-only fire suppression upgrade
+    fireSuppression: {
+      name: 'Fire Suppression Training',
+      description: 'XO reduces fire spread chance and spread rate by 15% per level.',
+      costBase: 30,
+      roleRestriction: 'XO',
+      applyTo: 'self',
+      effects: [
+        { type: 'fireSuppress', perLevel: 0.15 }
       ]
     }
   };
 
   // Random event system state
-  const activeEvents = []; // { id, type, target, startedAt, duration, meta }
+  let activeEvents = []; // { id, type, target, startedAt, duration, meta }
   let nextEventTimer = null;
   let eventsEnabled = true; // toggleable if desired
 
@@ -258,7 +261,6 @@
       description: 'A hull breach sprays debris — all crew take a burst of damage and extra pressure damage for a short time.',
       duration: 12, // seconds
       apply(meta){
-        // immediate burst to each alive crew; and apply global extra damage multiplier
         meta.oldGlobalDamageBoost = meta.globalDamageBoost || 0;
         meta.globalDamageBoost = 0.6; // +60% damage while active
         crew.forEach(c=>{
@@ -270,31 +272,34 @@
         broadcastEvent('Hull Breach — immediate damage and pressure!');
       },
       revert(meta){
-        // nothing special beyond removing global boost
         broadcastEvent('Hull breach sealed.');
       }
     },
     fire: {
       id: 'fire',
       name: 'Fire',
-      description: 'A fire has started in a system — increases damage taken and slows repairs. Can be extinguished (costs supplies).',
+      description: 'A fire has started in a system — it must be extinguished before repairs can begin. Assign a crew member to fight it.',
       duration: 18,
       apply(meta){
-        // target is a task id
         const t = tasks.find(x=>x.id === meta.target);
         if (!t) return;
-        // increase task damage and slow speed
-        t.eventDamageMult = (t.eventDamageMult || 1) * 1.6;
-        t.eventSpeedMult = (t.eventSpeedMult || 1) * 0.6; // repairs 40% slower
+        meta.fireHealth = (typeof meta.fireHealth === 'number') ? meta.fireHealth : 100;
+        meta.fireMax = (typeof meta.fireMax === 'number') ? meta.fireMax : (meta.fireHealth || 100);
+        meta.startedAt = meta.startedAt || (Date.now() / 1000);
         t.events.push(meta);
-        broadcastEvent(`Fire in ${t.title}! Extinguish with supplies or wait.`);
+        t.eventDamageMult = (t.eventDamageMult || 1) * 1.6;
+        t.eventSpeedMult = (t.eventSpeedMult || 1) * 0.6;
+        if (t.assigned){
+          const c = crew.find(x=>x.id===t.assigned);
+          if (c) c.repairing = null;
+          t.assigned = null;
+        }
+        // no transient toast for fire — task shows bar and extinguisher UI
       },
       revert(meta){
         const t = tasks.find(x=>x.id === meta.target);
         if (!t) return;
-        // remove this specific event from t.events and recalc multipliers by recomputing from remaining events
         t.events = (t.events || []).filter(e=> e.id !== meta.id);
-        // recompute multipliers
         let dmg = 1, spd = 1;
         t.events.forEach(e=>{
           if (e.type === 'fire'){ dmg *= 1.6; spd *= 0.6; }
@@ -302,7 +307,6 @@
         });
         t.eventDamageMult = dmg;
         t.eventSpeedMult = spd;
-        broadcastEvent(`${t.title} fire extinguished (or burned out).`);
       }
     },
     electrical: {
@@ -343,7 +347,6 @@
         broadcastEvent(`Supply cache found! +${reward} supplies.`);
       },
       revert(meta){
-        // no-op
       }
     },
     calmWaters: {
@@ -364,8 +367,8 @@
 
   // helper to broadcast a short notification in event log area
   function broadcastEvent(text){
-    // create a temporary notification in the event log
     const log = document.getElementById('eventLog');
+    if (!log) return;
     const el = document.createElement('div');
     el.className = 'event-badge event-muted';
     el.textContent = text;
@@ -382,34 +385,76 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
+
       if (parsed.difficulty) {
         currentDifficultyName = parsed.difficulty;
         applyDifficulty(currentDifficultyName, /*persistUI*/ false);
-        document.getElementById('difficultySelect').value = currentDifficultyName;
+        const sel = document.getElementById('difficultySelect');
+        if (sel) sel.value = currentDifficultyName;
       }
       if (parsed.supplies !== undefined) supplies = parsed.supplies;
-      // if no supplies found in save, use starting supplies for difficulty
       if (typeof supplies !== 'number') supplies = START_SUPPLIES;
 
       if (parsed.crew){
         for (const saved of parsed.crew){
           const c = crew.find(x => x.id === saved.id);
           if (c && saved.upgrades){
-            c.upgrades = Object.assign({ speed:0, armor:0, med:0, autoHeal:0, engineer:0 }, saved.upgrades);
+            c.upgrades = Object.assign({ speed:0, armor:0, med:0, autoHeal:0, engineer:0, fireSuppression:0 }, saved.upgrades);
             applyCrewUpgradeStats(c);
           }
         }
       }
       if (parsed.tasks){
         for (const saved of parsed.tasks){
-          const t = tasks.find(x => x.id === saved.id);
+          const t = tasks.find(x=>x.id === saved.id);
           if (t){
             t.progress = (typeof saved.progress === 'number') ? saved.progress : t.progress;
             t.complete = !!saved.complete;
             if (t.complete) t.progress = t.baseTime * TASK_TIME_MULT;
+            t.extinguisherAssigned = saved.extinguisherAssigned || null;
           }
         }
       }
+
+      // Load active events (fires etc) and re-apply their effects
+      if (parsed.activeEvents && Array.isArray(parsed.activeEvents)){
+        activeEvents = [];
+        tasks.forEach(t=> t.events = []);
+        parsed.activeEvents.forEach(savedEv => {
+          const ev = {
+            id: savedEv.id,
+            type: savedEv.type,
+            target: savedEv.target,
+            startedAt: savedEv.startedAt,
+            duration: savedEv.duration,
+            meta: savedEv.meta || {}
+          };
+          // ensure fire meta defaults
+          if (ev.type === 'fire'){
+            ev.meta.fireHealth = (typeof ev.meta.fireHealth === 'number') ? ev.meta.fireHealth : 100;
+            ev.meta.fireMax = (typeof ev.meta.fireMax === 'number') ? ev.meta.fireMax : (ev.meta.fireHealth || 100);
+          }
+          activeEvents.push(ev);
+          const def = EVENT_DEFS[ev.type];
+          try {
+            if (def && typeof def.apply === 'function') {
+              def.apply(ev.meta);
+            }
+          } catch(e){ console.warn('Error applying saved event', e); }
+        });
+        // restore extinguisherAssigned -> mark crew as extinguishing
+        tasks.forEach(t => {
+          if (t.extinguisherAssigned){
+            const c = crew.find(x=>x.id === t.extinguisherAssigned);
+            if (c && c.health > 0){
+              c.repairing = 'extinguish:' + t.id;
+            } else {
+              t.extinguisherAssigned = null;
+            }
+          }
+        });
+      }
+
     }catch(e){
       console.warn('Failed to load save', e);
     }
@@ -421,7 +466,8 @@
         difficulty: currentDifficultyName,
         supplies,
         crew: crew.map(c => ({ id:c.id, upgrades:c.upgrades })),
-        tasks: tasks.map(t => ({ id: t.id, progress: t.progress, complete: t.complete }))
+        tasks: tasks.map(t => ({ id: t.id, progress: t.progress, complete: t.complete, extinguisherAssigned: t.extinguisherAssigned })),
+        activeEvents: activeEvents.map(ev => ({ id: ev.id, type: ev.type, target: ev.target, startedAt: ev.startedAt, duration: ev.duration, meta: ev.meta }))
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     }catch(e){
@@ -433,10 +479,9 @@
     const ok = await showConfirm('Reset all saved upgrades and supplies?');
     if (!ok) return;
     localStorage.removeItem(SAVE_KEY);
-    // reset to difficulty start supplies
     supplies = START_SUPPLIES;
-    crew.forEach(c => { c.upgrades = {speed:0, armor:0, med:0, autoHeal:0, engineer:0}; applyCrewUpgradeStats(c); c.health=c.maxHealth; c.repairing=null; c.healTarget=null; });
-    tasks.forEach(t => { t.progress=0; t.assigned=null; t.complete=false; t.eventDamageMult=1; t.eventSpeedMult=1; t.events=[]; });
+    crew.forEach(c => { c.upgrades = {speed:0, armor:0, med:0, autoHeal:0, engineer:0, fireSuppression:0}; applyCrewUpgradeStats(c); c.health=c.maxHealth; c.repairing=null; c.healTarget=null; });
+    tasks.forEach(t => { t.progress=0; t.assigned=null; t.extinguisherAssigned=null; t.complete=false; t.eventDamageMult=1; t.eventSpeedMult=1; t.events=[]; });
     activeEvents.length = 0;
     stopNextEventTimer();
     scheduleNextEvent();
@@ -445,18 +490,14 @@
     showToast('Upgrades and supplies reset.');
   }
 
-  // ---------- Apply crew upgrade stats (now handles multiple effects & new effect types) ----------
+  // ---------- Apply crew upgrade stats (handles fire suppression) ----------
   function applyCrewUpgradeStats(c) {
-    // Start with base values
-    // Note: MEDIC_BASE_HEAL and crew[].repairSpeedMult base of 1 are constants defined earlier
-    let repairBonus = 0;      // additive fraction to add to base (1 + repairBonus)
-    let damageReduction = 0;  // additive fraction (capped later)
-    let healBonus = 0;        // fractional bonus to MEDIC_BASE_HEAL
-    // autoHeal level handled by reading stored level
-    // ensure upgrade keys exist so lookups are safe
+    let repairBonus = 0;
+    let damageReduction = 0;
+    let healBonus = 0;
+    let fireSuppress = 0;
     c.upgrades = c.upgrades || {};
 
-    // For each upgrade this crew has, accumulate its effects
     for (const [key, lvl] of Object.entries(c.upgrades)) {
       if (!lvl || lvl <= 0) continue;
       const def = UPGRADES[key];
@@ -466,32 +507,28 @@
         const per = effect.perLevel || 0;
         switch (effect.type) {
           case 'repairRate':
-            // fractional increase to repair speed per level (e.g. 0.1 => +10% per level)
             repairBonus += lvl * per;
             break;
           case 'damageRate':
           case 'damageReduction':
-            // decrease incoming damage (additive). We'll cap at 90% later to avoid absurdity.
             damageReduction += lvl * per;
             break;
           case 'healRate':
-            // fractional increase to MEDIC_BASE_HEAL
             healBonus += lvl * per;
             break;
           case 'autoHeal':
-            // autoHeal is a level rather than a numeric multiplier; handled after loop via stored level
-            // (we don't change any numeric stat here)
+            break;
+          case 'fireSuppress':
+            fireSuppress += lvl * per;
             break;
           default:
-            // Unknown/extendable effect type: you can add handlers here
             console.warn('Unhandled upgrade effect type:', effect.type);
         }
       });
     }
 
-    // Apply computed values
     c.repairSpeedMult = 1 + repairBonus;
-    c.damageReduction = Math.min(0.9, damageReduction); // cap at 90% reduction
+    c.damageReduction = Math.min(0.9, damageReduction);
     if (c.role === 'Medic') {
       c.healRate = MEDIC_BASE_HEAL * (1 + healBonus);
       c.autoHealLevel = (c.upgrades.autoHeal || 0);
@@ -500,7 +537,7 @@
       c.autoHealLevel = (c.upgrades.autoHeal || 0);
     }
 
-    // Keep other derived fields consistent (if you later add maxHealth modification, do it here)
+    c.fireSuppressionLevel = Math.min(0.9, fireSuppress);
   }
 
   // Apply difficulty settings (call this to change difficulty)
@@ -513,9 +550,11 @@
     TASK_TIME_MULT = preset.taskTimeMult;
     EVENT_WEIGHTS = preset.eventWeights || {};
     currentDifficultyName = name;
-    document.getElementById('currentDifficulty').textContent = name;
+    const el = document.getElementById('currentDifficulty');
+    if (el) el.textContent = name;
     if (persistUI) {
-      document.getElementById('difficultySelect').value = name;
+      const sel = document.getElementById('difficultySelect');
+      if (sel) sel.value = name;
     }
   }
 
@@ -524,10 +563,9 @@
     const pool = [];
     for (const key in EVENT_DEFS){
       const weight = (EVENT_WEIGHTS && EVENT_WEIGHTS[key] !== undefined) ? EVENT_WEIGHTS[key] : 1;
-      const count = Math.max(0, Math.round(weight * 10)); // scale to integer counts
+      const count = Math.max(0, Math.round(weight * 10));
       for (let i=0;i<count;i++) pool.push(key);
     }
-    // fallback
     if (pool.length === 0) pool.push('supplyCache','fire','electrical');
     return pool;
   }
@@ -538,65 +576,125 @@
   const upgradePanel = document.getElementById('upgradePanel');
   const suppliesLabel = document.getElementById('supplies');
 
+  // small helper to show a transient popover picker for extinguish assignment
+  function showExtinguishPicker(taskId, buttonEl){
+    // remove any existing picker
+    const existing = document.getElementById('extinguish-picker');
+    if (existing) existing.remove();
+
+    const picker = document.createElement('div');
+    picker.id = 'extinguish-picker';
+    picker.style.position = 'absolute';
+    picker.style.zIndex = 9999;
+    picker.style.background = '#081018';
+    picker.style.border = '1px solid rgba(255,255,255,0.06)';
+    picker.style.padding = '8px';
+    picker.style.borderRadius = '6px';
+    picker.style.minWidth = '220px';
+    picker.style.boxShadow = '0 6px 20px rgba(0,0,0,0.6)';
+
+    // position near buttonEl if given
+    if (buttonEl) {
+      const rect = buttonEl.getBoundingClientRect();
+      picker.style.left = Math.max(8, rect.left) + 'px';
+      picker.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    } else {
+      picker.style.left = '50%';
+      picker.style.top = '50%';
+      picker.style.transform = 'translate(-50%,-50%)';
+    }
+
+    const available = crew.filter(c => c.health>0 && !c.repairing);
+    if (available.length === 0){
+      picker.innerHTML = `<div class="small-muted">No available crew to extinguish</div><div style="margin-top:8px;text-align:right"><button id="ext-close" class="small">Close</button></div>`;
+      document.body.appendChild(picker);
+      picker.querySelector('#ext-close').onclick = ()=> picker.remove();
+      setTimeout(()=> window.addEventListener('click', onDocClick));
+      function onDocClick(e){ if (!picker.contains(e.target)) { picker.remove(); window.removeEventListener('click', onDocClick); } }
+      return;
+    }
+
+    picker.innerHTML = `
+      <div style="font-weight:700;margin-bottom:6px">Assign Extinguisher</div>
+      <div>
+        <select id="ext-select" style="width:100%;padding:6px;border-radius:4px;background:#071018;border:1px solid rgba(255,255,255,0.04)">
+          ${available.map(c=>`<option value="${c.id}">${c.name} ${c.role === 'Engineer' ? ' (Eng)' : ''}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="ext-quick" class="small">Quick</button>
+        <button id="ext-assign" class="small">Assign</button>
+        <button id="ext-cancel" class="small">Cancel</button>
+      </div>
+    `;
+
+    document.body.appendChild(picker);
+
+    // event handlers
+    picker.querySelector('#ext-cancel').onclick = ()=> picker.remove();
+    picker.querySelector('#ext-assign').onclick = ()=> {
+      const sel = picker.querySelector('#ext-select');
+      const crewId = sel.value;
+      assignCrewToExtinguish(crewId, taskId);
+      picker.remove();
+    };
+    picker.querySelector('#ext-quick').onclick = ()=> {
+      // prefer Engineer then healthiest
+      available.sort((a,b) => {
+        if (a.role === 'Engineer' && b.role !== 'Engineer') return -1;
+        if (b.role === 'Engineer' && a.role !== 'Engineer') return 1;
+        return b.health - a.health;
+      });
+      assignCrewToExtinguish(available[0].id, taskId);
+      picker.remove();
+    };
+
+    // close on outside click
+    setTimeout(()=> window.addEventListener('click', onDocClick));
+    function onDocClick(e){ if (!picker.contains(e.target)) { picker.remove(); window.removeEventListener('click', onDocClick); } }
+  }
+
   // --- start: scheduled render helper ---
   let renderScheduled = false;
-
   function isUserInteracting() {
     const active = document.activeElement;
     if (!active) return false;
-    // ignore page-level focus
     if (active === document.body || active === document.documentElement) return false;
-    // if the focused element lives inside those containers, consider user is interacting
-    return crewContainer.contains(active) || tasksContainer.contains(active) || upgradePanel.contains(active);
+    return crewContainer && crewContainer.contains(active) || tasksContainer && tasksContainer.contains(active) || upgradePanel && upgradePanel.contains(active);
   }
-
-  /**
-   * scheduleRender() - call this instead of renderAll() from non-user-initiated code (game ticks, events).
-   * It uses requestAnimationFrame, but if the user is interacting it postpones slightly to avoid stomping the input.
-   */
   function scheduleRender(delayMs = 0) {
     if (renderScheduled) return;
     renderScheduled = true;
-
     const run = () => {
       renderScheduled = false;
-      // if the user is interacting (select/input focused) postpone a bit rather than re-render now
-      if (isUserInteracting()) {
-        // try again shortly so player input isn't lost
-        setTimeout(scheduleRender, 150);
-        return;
-      }
+      if (isUserInteracting()) { setTimeout(scheduleRender, 150); return; }
       renderAll();
     };
-
-    if (delayMs > 0) {
-      setTimeout(() => requestAnimationFrame(run), delayMs);
-    } else {
-      requestAnimationFrame(run);
-    }
+    if (delayMs > 0) setTimeout(() => requestAnimationFrame(run), delayMs);
+    else requestAnimationFrame(run);
   }
-  // --- end: scheduled render helper ---
+  // --- end scheduled render helper ---
 
   let deadCrewIds = new Set();
 
   function renderCrew() {
+    if (!crewContainer) return;
     crewContainer.innerHTML = '';
-      crew.forEach(c => {
-        const wasDead = deadCrewIds.has(c.id);
-        const isDead = c.health <= 0;
+    crew.forEach(c => {
+      const wasDead = deadCrewIds.has(c.id);
+      const isDead = c.health <= 0;
 
-        if (isDead && !wasDead) {
-          deadCrewIds.add(c.id);
-          window.dispatchEvent(new CustomEvent('crewDied', { detail: { id: c.id, name: c.name } }));
-        } else if (!isDead && wasDead) {
-          deadCrewIds.delete(c.id);
-        }
+      if (isDead && !wasDead) {
+        deadCrewIds.add(c.id);
+        window.dispatchEvent(new CustomEvent('crewDied', { detail: { id: c.id, name: c.name } }));
+      } else if (!isDead && wasDead) {
+        deadCrewIds.delete(c.id);
+      }
       const medic = crew.find(x => x.role === 'Medic');
       const isHealingTarget = medic && medic.repairing === ('healing:' + c.id);
       const medicIsHealing = medic && medic.repairing && medic.repairing.startsWith('healing:');
       const isWorking = !!(c.repairing && !c.repairing.startsWith('healing:') && c.health > 0);
 
-      // Avatar background
       const avatarBg = isDead
         ? '#330000'
         : isWorking
@@ -606,7 +704,6 @@
       const el = document.createElement('div');
       el.className = 'crew';
 
-      // style box
       if (isDead) {
         el.style.border = '1px solid rgba(255,0,0,0.25)';
         el.style.background = 'linear-gradient(180deg,#220000,#110000)';
@@ -648,7 +745,7 @@
 
           <div style="display:flex;gap:8px;margin-top:6px;align-items:center;justify-content:space-between">
             <div class="small-muted">
-              ${isDead ? 'Unavailable' : `Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%`}
+              ${isDead ? 'Unavailable' : `Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%` }
             </div>
             <div>
               ${(!isDead && c.id !== 'med')
@@ -664,9 +761,8 @@
       crewContainer.appendChild(el);
     });
 
-    suppliesLabel.textContent = supplies;
+    if (suppliesLabel) suppliesLabel.textContent = supplies;
 
-    // attach events only for alive crew
     crewContainer.querySelectorAll('[data-action="openUpgrades"]').forEach(btn => {
       btn.onclick = () => openUpgradeFor(btn.dataset.id);
     });
@@ -678,25 +774,51 @@
     });
   }
 
+  // helper: check if a task currently has an active fire event
+  function taskHasActiveFire(taskId){
+    return activeEvents.some(ev => ev.type === 'fire' && ev.target === taskId);
+  }
+
   function renderTasks(){
+    if (!tasksContainer) return;
     tasksContainer.innerHTML = '';
     tasks.forEach(t=>{
       const assignedName = t.assigned ? (crew.find(c=>c.id===t.assigned)?.name || 'Unknown') : '—';
-      // compute percent using TASK_TIME_MULT effect: progress is stored in 'seconds progressed' against baseTime * TASK_TIME_MULT
+      const extingName = t.extinguisherAssigned ? (crew.find(c=>c.id===t.extinguisherAssigned)?.name || '—') : '—';
       const percent = Math.min(100, Math.round((t.progress / (t.baseTime * TASK_TIME_MULT))*100));
       const completed = t.complete;
 
-      // prepare event summary for display
       const eventBadges = (t.events || []).map(e=> {
-        if (e.type === 'fire') return `<span style="color:${'var(--danger)'};font-weight:700">FIRE</span>`;
+        if (e.type === 'fire') return ''; // handled separately
         if (e.type === 'electrical') return `<span style="color:#ffc857;font-weight:700">E-Surge</span>`;
+        if (e.type === 'hullBreach') return `<span style="color:${'var(--danger)'};font-weight:700">BREACH</span>`;
         return `<span>${e.type}</span>`;
-      }).join(' ');
+      }).filter(Boolean).join(' ');
+
+      const firesOnTask = activeEvents.filter(ev => ev.type === 'fire' && ev.target === t.id);
+      // compute average fireHealth / use first fire's fireMax for progress display
+      let firePercent = 0;
+      let extinguishProgress = 0;
+      let extinguisher = null;
+      if (firesOnTask.length > 0){
+        const first = firesOnTask[0];
+        const fh = (first.meta && typeof first.meta.fireHealth === 'number') ? first.meta.fireHealth : 100;
+        const fm = (first.meta && typeof first.meta.fireMax === 'number') ? first.meta.fireMax : 100;
+        firePercent = Math.max(0, Math.round(fh)); // show remaining intensity as percent
+        extinguishProgress = Math.max(0, Math.round( ((fm - fh) / fm) * 100 ));
+      }
+
+      if (t.extinguisherAssigned){
+        const c = crew.find(cc=>cc.id===t.extinguisherAssigned);
+        if (c) extinguisher = c;
+      }
+
+      const indicatorColor = completed ? 'var(--good)' : (taskHasActiveFire(t.id) ? 'var(--danger)' : (t.assigned? '#ffc857' : '#444'));
 
       const taskEl = document.createElement('div');
       taskEl.className = 'task';
       taskEl.innerHTML =
-        `<div style="width:12px;height:12px;border-radius:3px;background:${completed? 'var(--good)' : (t.assigned? '#ffc857' : '#444')}"></div>
+        `<div style="width:12px;height:12px;border-radius:3px;background:${indicatorColor}"></div>
         <div class="info">
           <div style="display:flex;justify-content:space-between">
             <div><strong>${t.title}</strong></div>
@@ -705,7 +827,18 @@
           <div style="margin-top:8px">
             <div class="repair-bar"><i style="width:${percent}%"></i></div>
           </div>
-          <div style="margin-top:6px" class="small-muted">Assigned: <strong>${assignedName}</strong> • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)} ${eventBadges ? '• ' + eventBadges : ''}</div>
+          ${ firesOnTask.length > 0 ? `
+            <div style="margin-top:8px">
+              <div class="small-muted">Fire intensity</div>
+              <div class="fire-bar" title="Assign crew to extinguish"><i style="width:${firePercent}%"></i></div>
+            </div>
+            ${ extingName !== '—' ? `
+              <div style="margin-top:6px">
+                <div class="small-muted">Extinguishing: <strong>${extinguisher ? extinguisher.name : extingName}</strong> • ${extinguishProgress}%</div>
+                <div class="extinguish-progress" title="Extinguish progress"><i style="width:${extinguishProgress}%"></i></div>
+              </div>` : ''
+            }` : '' }
+          <div style="margin-top:6px" class="small-muted">Assigned: <strong>${assignedName}</strong> • Extinguisher: <strong>${extingName === '—' ? (firesOnTask.length ? 'None' : '—') : extingName}</strong> • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)} ${eventBadges ? '• ' + eventBadges : ''}</div>
         </div>
         <div class="actions">
           <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
@@ -718,7 +851,9 @@
           </div>
           <div style="margin-top:8px;text-align:right">
             ${completed ? `<div style="color:var(--good);font-weight:700">COMPLETE</div>` : `<div class="small-muted">${percent}%</div>`}
-            ${ (t.events || []).some(e=> e.type === 'fire') ? `<div style="margin-top:6px"><button class="small" data-action="extinguish" data-id="${t.id}">Extinguish (10 supplies)</button></div>` : '' }
+            ${ firesOnTask.length
+                ? `<div style="margin-top:6px"><button class="small" data-action="assignExtinguish" data-id="${t.id}">${t.extinguisherAssigned ? 'Stop Extinguish' : 'Assign Extinguisher'}</button></div>`
+                : '' }
           </div>
         </div>`;
       tasksContainer.appendChild(taskEl);
@@ -730,11 +865,10 @@
         const taskId = sel.dataset.id;
         const crewId = sel.value || null;
         assignCrewToTask(crewId, taskId);
-      }
+      };
     });
     tasksContainer.querySelectorAll('[data-action="fastAssign"]').forEach(btn=>{
       btn.onclick = ()=> {
-        // quick assign the healthiest alive crew who is not the Medic or is allowed
         const tId = btn.dataset.id;
         const candidates = crew.filter(c=>c.health>0 && c.repairing==null);
         if (candidates.length===0) { showToast('No available crew to assign', { red: true}); return; }
@@ -742,19 +876,33 @@
         assignCrewToTask(candidates[0].id, tId);
         renderTasks();
         renderCrew();
-      }
+      };
     });
     tasksContainer.querySelectorAll('[data-action="cancel"]').forEach(btn=>{
       btn.onclick = ()=> {
         const tId = btn.dataset.id;
         unassignTask(tId);
-      }
+      };
     });
-    tasksContainer.querySelectorAll('[data-action="extinguish"]').forEach(btn=>{
-      btn.onclick = async ()=> {
+    tasksContainer.querySelectorAll('[data-action="assignExtinguish"]').forEach(btn=>{
+      btn.onclick = async (e)=> {
         const tId = btn.dataset.id;
-        await extinguishFireOnTask(tId);
-      }
+        const t = tasks.find(x=>x.id===tId);
+        if (!t) return;
+        // if already has an extinguisher assigned, unassign them
+        if (t.extinguisherAssigned){
+          const c = crew.find(x=>x.id === t.extinguisherAssigned);
+          if (c) { c.repairing = null; }
+          t.extinguisherAssigned = null;
+          // also clear crew.repairing if it was extinguish
+          if (c && c.repairing && c.repairing.startsWith('extinguish:')) c.repairing = null;
+          showToast('Extinguisher unassigned.');
+          renderAll();
+          return;
+        }
+        // show picker anchored to button
+        showExtinguishPicker(tId, e.currentTarget);
+      };
     });
   }
 
@@ -769,14 +917,18 @@
 
  function renderEventList() {
    const el = document.getElementById('eventLog');
+   if (!el) return;
    el.innerHTML = '';
 
    // Reverse chronological order
    activeEvents.slice().reverse().forEach(ev => {
+     // Do NOT show fire events in the event log popup area.
+     if (ev.type === 'fire') return;
+
      const rem = Math.max(0, Math.round(ev.duration - ((Date.now() / 1000) - ev.startedAt)));
      const badge = document.createElement('div');
      badge.className = 'event-badge ' +
-       (ev.type === 'fire' || ev.type === 'hullBreach' ? 'event-danger' :
+       (ev.type === 'hullBreach' ? 'event-danger' :
         (ev.type === 'calmWaters' ? 'event-good' : 'event-muted'));
 
      const icon = EVENT_ICONS[ev.type] || '❔';
@@ -788,15 +940,6 @@
           <strong>${EVENT_DEFS[ev.type].name}</strong>${targetText}
           ${ev.duration > 0 ? `<div class="small-muted">(${rem}s)</div>` : ''}
         </div>`;
-
-     // Add extinguish button for fire events
-     if (ev.type === 'fire') {
-       const btn = document.createElement('button');
-       btn.className = 'small';
-       btn.textContent = 'Extinguish (10)';
-       btn.onclick = (e) => { e.stopPropagation(); extinguishEvent(ev.id); };
-       badge.appendChild(btn);
-     }
 
      el.appendChild(badge);
    });
@@ -811,7 +954,6 @@
 
     const c = selectedCrew;
     const upgradeHTML = Object.entries(UPGRADES)
-      // only show upgrades that either have no role restriction or match this crew's role
       .filter(([key, upg]) => !upg.roleRestriction || upg.roleRestriction === c.role)
       .map(([key, upg]) => {
         const level = c.upgrades[key] || 0;
@@ -830,8 +972,7 @@
         </div>`;
       }).join('');
 
-    // Update the topbar supplies
-    document.getElementById('supplies').textContent = supplies;
+    if (document.getElementById('supplies')) document.getElementById('supplies').textContent = supplies;
 
     upgradePanel.innerHTML =
       `<div style="display:flex;justify-content:space-between;align-items:center">
@@ -853,6 +994,7 @@
         Current: Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%
         ${c.role === 'Medic' ? '• Heal rate: ' + (c.healRate || 0).toFixed(2) + ' HP/s' + (c.upgrades.autoHeal ? ' • Auto-Heal: ON' : '') : ''}
         ${c.role === 'Engineer' ? ' • Field Expertise lvl: ' + (c.upgrades.engineer || 0) : ''}
+        ${c.role === 'XO' ? ' • Fire suppression lvl: ' + (c.upgrades.fireSuppression || 0) : ''}
       </div>
     `;
 
@@ -867,7 +1009,6 @@
     renderCrew();
     renderTasks();
     renderEventList();
-    // keep upgrade panel in sync if a crew is open
     const openId = upgradePanel.dataset.openCrew;
     if (openId){
       const c = crew.find(x=>x.id===openId);
@@ -879,6 +1020,12 @@
   function assignCrewToTask(crewId, taskId){
     const t = tasks.find(x=>x.id === taskId);
     if (!t) return;
+    // cannot assign to repair if fire active
+    if (taskHasActiveFire(taskId)){
+      showToast('Fire must be extinguished before repairs may begin.', { red: true });
+      renderTasks();
+      return;
+    }
     // unassign previous
     if (t.assigned && t.assigned !== crewId){
       const prev = crew.find(c=>c.id===t.assigned);
@@ -886,7 +1033,7 @@
     }
     if (!crewId){
       t.assigned = null;
-      save(); // persist unassignment
+      save();
       renderAll();
       return;
     }
@@ -898,16 +1045,21 @@
     }
     // if crew was doing something else, unassign old task
     if (c.repairing && c.repairing !== taskId){
-      // if they were healing someone, clear heal target if medic
       if (c.role === 'Medic' && c.repairing && c.repairing.startsWith('healing:')) {
         c.healTarget = null;
+      }
+      // if they were extinguishing, clear that old task's extinguisherAssigned
+      if (typeof c.repairing === 'string' && c.repairing.startsWith('extinguish:')) {
+        const oldId = c.repairing.split(':')[1];
+        const oldTask = tasks.find(t => t.id === oldId);
+        if (oldTask && oldTask.extinguisherAssigned === c.id) oldTask.extinguisherAssigned = null;
       }
       const old = tasks.find(x=>x.id===c.repairing);
       if (old) old.assigned = null;
     }
     c.repairing = taskId;
     t.assigned = crewId;
-    save(); // persist assignment change
+    save();
     renderAll();
   }
 
@@ -919,7 +1071,41 @@
       if (c) c.repairing = null;
       t.assigned = null;
     }
-    save(); // persist unassignment
+    // also unassign extinguisher if present
+    if (t.extinguisherAssigned){
+      const c2 = crew.find(x=>x.id===t.extinguisherAssigned);
+      if (c2) c2.repairing = null;
+      t.extinguisherAssigned = null;
+    }
+    save();
+    renderAll();
+  }
+
+  // Assign a crew member to extinguish a fire on a task.
+  // No supplies are spent. Crew must work over time to reduce fireHealth.
+  function assignCrewToExtinguish(crewId, taskId){
+    const t = tasks.find(x=>x.id===taskId);
+    if (!t) return;
+    const fires = activeEvents.filter(e=> e.type === 'fire' && e.target === taskId);
+    if (fires.length === 0){ showToast('No fire to extinguish on that task.'); return; }
+
+    const c = crew.find(x=>x.id===crewId);
+    if (!c) return;
+    if (c.health <= 0){ showToast(c.name + ' is dead and cannot extinguish.'); return; }
+    if (c.repairing){ showToast(c.name + ' is busy.'); return; }
+
+    // unassign previous extinguishing if they had one
+    if (t.extinguisherAssigned){
+      const prev = crew.find(x=>x.id === t.extinguisherAssigned);
+      if (prev) prev.repairing = null;
+    }
+
+    // set crew as extinguishing
+    c.repairing = 'extinguish:' + taskId;
+    t.extinguisherAssigned = c.id;
+
+    save();
+    broadcastEvent(`${c.name} assigned to extinguish ${t.title}.`);
     renderAll();
   }
 
@@ -928,16 +1114,13 @@
     const medic = crew.find(x=>x.role==='Medic');
     if (!medic) { showToast('No medic present.'); return; }
     if (medic.health <= 0){ showToast('Medic is dead and cannot heal.'); return; }
-    // Toggle heal: if medic already healing this target, stop
     if (medic.repairing && medic.repairing === ('healing:' + targetId)){
       medic.repairing = null;
       medic.healTarget = null;
       renderAll();
       return;
     }
-    // if medic is busy repairing a system, unassign them from that and assign to healing
     if (medic.repairing && !medic.repairing.startsWith('healing:')){
-      // find old task and clear it
       const oldTask = tasks.find(t => t.id === medic.repairing);
       if (oldTask) oldTask.assigned = null;
     }
@@ -946,39 +1129,12 @@
     renderAll();
   }
 
-  // Extinguish fire on a task by spending supplies
-  async function extinguishFireOnTask(taskId){
-    const t = tasks.find(x=>x.id===taskId);
-    if (!t) return;
-    // find fire event(s)
-    const fires = activeEvents.filter(e=> e.type === 'fire' && e.target === taskId);
-    if (fires.length === 0) return;
-    const cost = 10;
-    if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')', { red: true}); return; }
-    const ok = await showConfirm('Spend ' + cost + ' supplies to extinguish the fire on ' + t.title + '?');
-    if (!ok) return;
-    supplies -= cost;
-    // remove all fire events on that task now
-    fires.forEach(f => removeEventById(f.id, true));
-    save();
-    renderAll();
-    showToast('Fire extinguished on ' + t.title + '.');
-  }
-
-  // Extinguish an event by id (used by event UI)
+  // Direct extinguish by button is deprecated; instruct player to assign crew
   async function extinguishEvent(eventId){
     const ev = activeEvents.find(e => e.id === eventId);
     if (!ev) return;
     if (ev.type !== 'fire'){ showToast('Only fires can be manually extinguished.', { red: true}); return; }
-    const cost = 10;
-    if (supplies < cost){ showToast('Not enough supplies to extinguish (need ' + cost + ')', { red: true}); return; }
-    const ok = await showConfirm('Spend ' + cost + ' supplies to extinguish the fire?');
-    if (!ok) return;
-    supplies -= cost;
-    removeEventById(eventId, true);
-    save();
-    renderAll();
-    showToast('Fire extinguished.');
+    showToast('Assign crew to extinguish (use Assign Extinguisher).', { red: true });
   }
 
   // Each loop tick we'll advance progress for assigned tasks and apply damage
@@ -997,24 +1153,20 @@
     tasks.forEach(t=>{
       if (t.complete) return;
       if (!t.assigned) return;
+      if (taskHasActiveFire(t.id)) return; // blocked while a fire exists
       const c = crew.find(x=>x.id === t.assigned);
       if (!c || c.health <= 0){
-        // unassign if assigned crew is dead or missing
         t.assigned = null;
         if (c) c.repairing = null;
         anyChange = true;
         return;
       }
-      // advance progress: speed affected by crew multiplier and task event speed multiplier
       const speed = c.repairSpeedMult * (t.eventSpeedMult || 1);
       const progressBefore = t.progress;
-      // progress is measured against baseTime * TASK_TIME_MULT
       t.progress += dt * speed;
       anyChange = anyChange || (Math.abs(t.progress - progressBefore) > 0.0001);
 
-      // apply damage to crew (increased damage globally and task event multipliers)
       const rawDamage = t.baseDamagePerSec * (t.eventDamageMult || 1) * DAMAGE_MULTIPLIER * dt;
-      // global event modifiers (e.g., hull breach or calm waters)
       let globalExtra = 0;
       activeEvents.forEach(ev=>{
         if (ev.type === 'hullBreach'){ globalExtra += 0.6; }
@@ -1025,53 +1177,91 @@
       c.health -= mitigated;
       if (c.health <= 0){
         c.health = 0;
-        // repair stops if crew dies
         t.assigned = null;
         c.repairing = null;
         anyChange = true;
       }
 
-      // mark complete
-      // compare progress against baseTime * TASK_TIME_MULT
       if (t.progress >= (t.baseTime * TASK_TIME_MULT)){
         t.complete = true;
         t.progress = t.baseTime * TASK_TIME_MULT;
-        // reward supplies
-        const reward = Math.max(12, Math.round((t.baseTime * TASK_TIME_MULT) * 6)); // scaled with longer times and difficulty
+        const reward = Math.max(12, Math.round((t.baseTime * TASK_TIME_MULT) * 6));
         supplies += reward;
-        // unassign crew
         if (t.assigned){
           const cr = crew.find(x=>x.id===t.assigned);
           if (cr) cr.repairing = null;
           t.assigned = null;
         }
         broadcastEvent(`${t.title} repaired!`);
-
-        // Task complete sound
         const evDetail = { id: t.id, title: t.title, reward: reward };
-          // If the sound script is loaded, this will fire and the listener plays immediately.
-          // If the sound script hasn't loaded yet, queue it so the sound script can pick it up on init.
-          if (typeof window.dispatchEvent === 'function') {
-            window.dispatchEvent(new CustomEvent('taskCompleted', { detail: evDetail }));
-          } else {
-            // extremely unlikely fallback: queue
-            window._queuedTaskCompletedEvents = window._queuedTaskCompletedEvents || [];
-            window._queuedTaskCompletedEvents.push(evDetail);
-          }
-
+        if (typeof window.dispatchEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('taskCompleted', { detail: evDetail }));
+        } else {
+          window._queuedTaskCompletedEvents = window._queuedTaskCompletedEvents || [];
+          window._queuedTaskCompletedEvents.push(evDetail);
+        }
         anyChange = true;
       }
     });
 
-    // ---------- Medic auto-heal behavior (updated) ----------
+    // Handle extinguishing progress by assigned extinguishers
+    const extinguishers = crew.filter(c => typeof c.repairing === 'string' && c.repairing.startsWith('extinguish:') && c.health > 0);
+    extinguishers.forEach(c=>{
+      const taskId = c.repairing.split(':')[1];
+      const t = tasks.find(x=>x.id === taskId);
+      if (!t) { c.repairing = null; return; }
+      const fires = activeEvents.filter(ev => ev.type === 'fire' && ev.target === taskId);
+      if (fires.length === 0){
+        c.repairing = null;
+        if (t.extinguisherAssigned === c.id) t.extinguisherAssigned = null;
+        anyChange = true;
+        return;
+      }
+      // only work on the oldest fire event
+      const ev = fires.sort((a,b)=> a.startedAt - b.startedAt)[0];
+      // ensure meta defaults
+      ev.meta.fireHealth = (typeof ev.meta.fireHealth === 'number') ? ev.meta.fireHealth : 100;
+      ev.meta.fireMax = (typeof ev.meta.fireMax === 'number') ? ev.meta.fireMax : (ev.meta.fireHealth || 100);
+
+      // extinguish power base (tuneable): 40 units/sec * repairSpeedMult
+      const basePower = 40;
+      const reduce = basePower * c.repairSpeedMult * dt;
+      const before = ev.meta.fireHealth || 100;
+      ev.meta.fireHealth = Math.max(0, before - reduce);
+      anyChange = true;
+
+      // FIRE now damages the extinguisher: scale with current intensity (higher intensity -> more damage)
+      // Base danger when fire is full intensity
+      const EXTINGUISH_DANGER_BASE = 6.0; // HP per second at full intensity
+      const intensityFactor = ((ev.meta.fireHealth || 0) / (ev.meta.fireMax || 100)); // 1.0 == full intensity
+      const dangerThisTick = EXTINGUISH_DANGER_BASE * intensityFactor * dt;
+      // apply damage after mitigation (crew damageReduction applies)
+      const damageApplied = dangerThisTick * (1 - (c.damageReduction || 0));
+      c.health = Math.max(0, c.health - damageApplied);
+
+      // If crew died while extinguishing
+      if (c.health <= 0){
+        c.health = 0;
+        // clear assignment
+        if (t.extinguisherAssigned === c.id) t.extinguisherAssigned = null;
+        c.repairing = null;
+        broadcastEvent(`${c.name} was incapacitated fighting the fire!`);
+      }
+
+      // when reaches zero, remove event and free crew
+      if (ev.meta.fireHealth <= 0){
+        removeEventById(ev.id, true);
+        broadcastEvent(`${c.name} has extinguished the fire in ${t.title}.`);
+        if (t.extinguisherAssigned === c.id) t.extinguisherAssigned = null;
+        c.repairing = null;
+      }
+    });
+
+    // ---------- Medic auto-heal behavior ----------
     const medic = crew.find(x=>x.role==='Medic');
 
-    // If Medic is idle and has AutoHeal upgrade, find an idle wounded crew and start healing them
     if (medic && (!medic.repairing) && (medic.upgrades && medic.upgrades.autoHeal > 0)){
-      // allow medic to auto-heal themself if autoHeal level is 2 or more
       const allowSelfHeal = (medic.upgrades.autoHeal || 0) >= 2;
-
-      // find idle wounded crew (include medic if allowSelfHeal)
       const candidates = crew.filter(c => {
         const wounded = c.health > 0 && c.health < c.maxHealth;
         const idle = !c.repairing;
@@ -1081,12 +1271,10 @@
       });
 
       if (candidates.length > 0){
-        // pick the lowest-health idle crew (relative percent)
         candidates.sort((a,b)=> (a.health / a.maxHealth) - (b.health / b.maxHealth));
         const target = candidates[0];
         medic.repairing = 'healing:' + target.id;
         medic.healTarget = target.id;
-        // message differs when medic heals themself
         if (target.id === medic.id) {
           broadcastEvent('Medic auto-healing themself');
         } else {
@@ -1096,16 +1284,14 @@
       }
     }
 
-    // Handle medic healing
+    // Medic healing
     if (medic && medic.repairing && medic.repairing.startsWith('healing:') && medic.healTarget){
       const target = crew.find(x=>x.id === medic.healTarget);
-      // medic healing does not take place inside dangerous area (medic can stay back)
       if (target && target.health > 0 && target.health < target.maxHealth){
         const healAmount = (medic.healRate || MEDIC_BASE_HEAL) * dt;
         const before = target.health;
         target.health = Math.min(target.maxHealth, target.health + healAmount);
         anyChange = anyChange || (Math.abs(target.health - before) > 0.0001);
-        // Auto-stop healing when target reaches full health (new)
         if (target.health >= target.maxHealth - 0.0001){
           medic.repairing = null;
           medic.healTarget = null;
@@ -1113,7 +1299,6 @@
           anyChange = true;
         }
       }
-      // if target is dead, stop healing
       if (target && target.health <= 0){
         medic.repairing = null;
         medic.healTarget = null;
@@ -1126,10 +1311,34 @@
     for (let i = activeEvents.length - 1; i >= 0; i--){
       const ev = activeEvents[i];
       if (ev.duration > 0 && (nowSec - ev.startedAt) >= ev.duration){
-        // expire
         removeEventById(ev.id, false);
         anyChange = true;
       }
+    }
+
+    // Fire spread logic for Hard+ with XO suppression
+    const difficulty = currentDifficultyName;
+    const baseSpread = (difficulty === 'Nightmare') ? 0.06 : (difficulty === 'Hard' ? 0.02 : 0);
+    let spreadBase = baseSpread;
+    const xo = crew.find(c => c.id === 'xo');
+    const xoSuppression = (xo && xo.fireSuppressionLevel) ? xo.fireSuppressionLevel : 0;
+    spreadBase = spreadBase * Math.max(0, 1 - xoSuppression);
+
+    if (spreadBase > 0){
+      const fires = activeEvents.filter(ev => ev.type === 'fire');
+      fires.forEach(ev => {
+        const age = nowSec - ev.startedAt;
+        if (age < 2) return;
+        const spreadProb = spreadBase * dt;
+        if (Math.random() < spreadProb){
+          const candidates = tasks.filter(t => !t.complete && t.id !== ev.target && !taskHasActiveFire(t.id));
+          if (candidates.length > 0){
+            const target = candidates[Math.floor(Math.random() * candidates.length)];
+            spawnEvent('fire', target.id);
+            anyChange = true;
+          }
+        }
+      });
     }
 
     // Check win
@@ -1140,10 +1349,7 @@
     }
 
     if (anyChange) {
-      // use scheduled render so we don't stomp user input if they're interacting
       scheduleRender();
-
-      // Auto-save throttled to roughly every 2 seconds
       const nowMs = performance.now();
       if (nowMs - lastAutoSave >= 2000){
         save();
@@ -1168,7 +1374,6 @@
   let eventCounter = 0;
   function spawnRandomEvent(){
     if (!eventsEnabled) return;
-    // choose candidate set using weighted pool
     const pool = getWeightedEventPool();
     const choice = pool[Math.floor(Math.random() * pool.length)];
     const evDef = EVENT_DEFS[choice];
@@ -1177,14 +1382,12 @@
     const targetNeeded = (choice === 'fire' || choice === 'electrical');
     const possibleTargets = tasks.filter(t=>!t.complete);
     if (targetNeeded && possibleTargets.length === 0){
-      // fallback to supply cache
       spawnEvent('supplyCache', null);
     } else {
       const target = targetNeeded ? possibleTargets[Math.floor(Math.random()*possibleTargets.length)].id : null;
       spawnEvent(choice, target);
     }
 
-    // schedule next
     scheduleNextEvent();
   }
 
@@ -1200,22 +1403,24 @@
       duration: def.duration,
       meta: {}
     };
+    if (type === 'fire') {
+      ev.meta.fireHealth = 100;
+      ev.meta.fireMax = 100;
+    }
     activeEvents.push(ev);
-    // apply immediately
-    def.apply(Object.assign(ev.meta, { target, globalDamageBoost: 0 }));
-    // use scheduled render so we don't steal focus if player is interacting
+    try {
+      def.apply(Object.assign(ev.meta, { target, globalDamageBoost: 0, id: ev.id }));
+    } catch(e){ console.warn('Event apply failed', e); }
     scheduleRender();
-    // if event has 0 duration, remove immediately after apply (but keep notification)
     if (def.duration === 0){
       setTimeout(()=> {
         def.revert(ev.meta);
-        // remove from active events
         const idx = activeEvents.findIndex(x => x.id === ev.id);
         if (idx >= 0) activeEvents.splice(idx,1);
-        // use scheduled render
         scheduleRender();
       }, 500);
     }
+    return ev.id;
   }
 
   function removeEventById(id, forced){
@@ -1226,16 +1431,27 @@
     if (def && def.revert){
       try { def.revert(ev.meta); } catch(e){ console.warn('Error reverting event', e); }
     }
+    // If it's a fire, clear any extinguisher assignments for that task
+    if (ev.type === 'fire' && ev.target){
+      const t = tasks.find(x=>x.id === ev.target);
+      if (t){
+        // clear extinguisherAssigned and any crew.repairing referencing extinguish this task
+        if (t.extinguisherAssigned){
+          const c = crew.find(x=>x.id === t.extinguisherAssigned);
+          if (c && c.repairing && c.repairing.startsWith('extinguish:')){
+            c.repairing = null;
+          }
+          t.extinguisherAssigned = null;
+        }
+      }
+    }
     activeEvents.splice(idx,1);
-    // save event removal (so any state changes that affect tasks get persisted)
     save();
-    // use scheduled render to avoid stomping input
     scheduleRender();
   }
 
   function scheduleNextEvent(){
     stopNextEventTimer();
-    // random between configured min/max
     const delay = EVENT_DELAY_MIN_MS + Math.floor(Math.random() * Math.max(0, EVENT_DELAY_MAX_MS - EVENT_DELAY_MIN_MS));
     nextEventTimer = setTimeout(()=> {
       spawnRandomEvent();
@@ -1251,15 +1467,11 @@
     return Math.round(def.costBase * Math.pow(1.5, currentLevel));
   }
 
-  //////////////////////////////////////////////////////////////////
-  // Purchase logic: supports applyTo:'all' (increments level on each crew member)
-  //////////////////////////////////////////////////////////////////
   function purchaseUpgrade(crewId, type) {
     const purchaser = crew.find(x => x.id === crewId);
     if (!purchaser) return;
     const def = UPGRADES[type];
     if (!def) return;
-    // Current level cost is based on purchaser's current level for that upgrade (even for global ones)
     const currentLevel = purchaser.upgrades[type] || 0;
     const cost = calcUpgradeCost(type, currentLevel);
     if (supplies < cost) {
@@ -1270,18 +1482,14 @@
     supplies -= cost;
 
     if (def.applyTo === 'all') {
-      // Increment upgrade level on every crew member
       crew.forEach(c => {
         c.upgrades[type] = (c.upgrades[type] || 0) + 1;
         applyCrewUpgradeStats(c);
       });
-      // Persist and rerender
       save();
       renderAll();
-      // show a global toast
       showToast(`Global upgrade purchased: ${def.name} (all crew now lvl ${crew[0].upgrades[type]})`);
     } else {
-      // Apply only to purchaser (default)
       purchaser.upgrades[type] = (purchaser.upgrades[type] || 0) + 1;
       applyCrewUpgradeStats(purchaser);
       save();
@@ -1299,35 +1507,29 @@
   }
 
   // ---------- UI events ----------
-  document.getElementById('btn-start').addEventListener('click', ()=>{ // start is sync so fine
+  document.getElementById('btn-start') && document.getElementById('btn-start').addEventListener('click', ()=>{
     const overlay = document.getElementById('welcome-overlay');
-    overlay.style.display = 'none';
-    // ensure supplies default is set to START_SUPPLIES if not loaded from save
+    if (overlay) overlay.style.display = 'none';
     if (typeof supplies !== 'number' || supplies === 0) supplies = START_SUPPLIES;
     startLoop();
     renderAll();
     save();
   });
 
-  // wire reset button to async resetUpgrades
-  document.getElementById('btn-reset-upgrades').addEventListener('click', async ()=> { await resetUpgrades(); });
+  document.getElementById('btn-reset-upgrades') && document.getElementById('btn-reset-upgrades').addEventListener('click', async ()=> { await resetUpgrades(); });
 
-  document.getElementById('difficultySelect').addEventListener('change', async (e)=>{
+  document.getElementById('difficultySelect') && document.getElementById('difficultySelect').addEventListener('change', async (e)=>{
     const newDiff = e.target.value;
-    // if game already started, confirm change (applies immediately if confirmed)
-    if (document.getElementById('welcome-overlay').style.display === 'none'){
+    if (document.getElementById('welcome-overlay') && document.getElementById('welcome-overlay').style.display === 'none'){
       const ok = await showConfirm('Change difficulty to ' + newDiff + '? This will immediately alter event frequency and damage.');
       if (!ok) {
-        // revert select
         document.getElementById('difficultySelect').value = currentDifficultyName;
         return;
       }
     }
     applyDifficulty(newDiff);
-    // update description box
     updateDifficultyDesc();
-    // update supplies if welcome overlay present and no saved supplies
-    if (document.getElementById('welcome-overlay').style.display !== 'none'){
+    if (document.getElementById('welcome-overlay') && document.getElementById('welcome-overlay').style.display !== 'none'){
       supplies = START_SUPPLIES;
     }
     save();
@@ -1337,56 +1539,44 @@
   function updateDifficultyDesc(){
     const sel = document.getElementById('difficultySelect');
     const desc = document.getElementById('difficultyDesc');
-    const name = sel.value || 'Normal';
+    const name = sel ? (sel.value || 'Normal') : currentDifficultyName;
     const p = DIFFICULTY_PRESETS[name];
-    desc.textContent = `Damage x${p.damageMultiplier}, Start supplies: ${p.startSupplies}, Event cadence: ${Math.round(p.eventDelayMinMs/1000)}–${Math.round(p.eventDelayMaxMs/1000)}s`;
+    if (desc) desc.textContent = `Damage x${p.damageMultiplier}, Start supplies: ${p.startSupplies}, Event cadence: ${Math.round(p.eventDelayMinMs/1000)}–${Math.round(p.eventDelayMaxMs/1000)}s`;
   }
 
-  // end overlay / victory
   function showVictory(){
       try { playWinSound(); } catch(e) { console.warn('Win sound failed', e); }
-      document.getElementById('end-overlay').style.display = 'flex';
-      document.getElementById('end-title').textContent = 'YOU SURFACED — VICTORY';
-      document.getElementById('end-sub').textContent = 'All critical systems repaired. Supplies: ' + supplies + ' • Difficulty: ' + currentDifficultyName;
+      const endOverlay = document.getElementById('end-overlay');
+      if (endOverlay) endOverlay.style.display = 'flex';
+      const endTitle = document.getElementById('end-title');
+      const endSub = document.getElementById('end-sub');
+      if (endTitle) endTitle.textContent = 'YOU SURFACED — VICTORY';
+      if (endSub) endSub.textContent = 'All critical systems repaired. Supplies: ' + supplies + ' • Difficulty: ' + currentDifficultyName;
     }
 
-
-  // quick utility: fast assign by id (used by "Quick" button)
   function findAvailableCrew(){
     return crew.filter(c=>c.health>0 && c.repairing==null);
   }
 
   // ---------- Init ----------
   function init(){
-    // apply saved or default difficulty first
     applyDifficulty(currentDifficultyName);
     updateDifficultyDesc();
-
-    // load saves (this may override supplies and difficulty)
     loadSave();
-
-    // ensure crew stats reflect upgrades
     crew.forEach(c => applyCrewUpgradeStats(c));
     renderAll();
-
-    // start the loop only when the user clicks Start (via welcome overlay)
-    if (document.getElementById('welcome-overlay').style.display === 'none'){
+    if (document.getElementById('welcome-overlay') && document.getElementById('welcome-overlay').style.display === 'none'){
       startLoop();
     }
-
-    // keyboard: H to toggle welcome overlay for testing
     window.addEventListener('keydown', (e)=>{
       if (e.key.toLowerCase() === 'h'){
         const o = document.getElementById('welcome-overlay');
-        o.style.display = (o.style.display === 'none' || !o.style.display) ? 'flex' : 'none';
+        if (o) o.style.display = (o.style.display === 'none' || !o.style) ? 'flex' : 'none';
       }
     });
   }
 
-  // safety: make sure stats are applied
   crew.forEach(c => applyCrewUpgradeStats(c));
-
-  // run init
   init();
 
   // Expose some functions for debugging in console

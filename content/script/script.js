@@ -24,7 +24,12 @@
   })();
 
   function showToast(message, options = {}) {
-    window.dispatchEvent(new CustomEvent('popUp'));
+
+    if (options.red) {
+        window.dispatchEvent(new CustomEvent('popUpBad'));
+    } else {
+        window.dispatchEvent(new CustomEvent('popUp'));
+    }
     const root = document.getElementById('immersive-toasts');
     if (!root) return;
     const el = document.createElement('div');

@@ -119,8 +119,8 @@ document.addEventListener('click', (e) => {
 
     // files expected in same folder
     try {
-      waterBuffer = await loadAudio('sounds/thirdparty/loudwaterrushing.mp3');  // ambient
-      musicBuffer = await loadAudio('sounds/28006303.mp3');  // music
+      waterBuffer = await loadAudio('content/sounds/thirdparty/loudwaterrushing.mp3');  // ambient
+      musicBuffer = await loadAudio('content/sounds/28006303.mp3');  // music
     } catch(e){
       // audio optional — continue silently if missing
       console.warn('Audio load failed', e);
@@ -316,6 +316,54 @@ document.addEventListener('click', (e) => {
     }
   }
 
+  function playBadPopupSound() {
+    try {
+      if (audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+      const now = audioContext.currentTime;
+
+      // master
+      const master = audioContext.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.linearRampToValueAtTime(0.7, now + 0.01);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+      master.connect(audioContext.destination);
+
+      // oscillator with downward sweep
+      const osc = audioContext.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.4);
+
+      const g = audioContext.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.6, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+
+      osc.connect(g).connect(master);
+      osc.start(now);
+      osc.stop(now + 0.5);
+
+      // add a dissonant second oscillator (minor 2nd)
+      const osc2 = audioContext.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(850, now);
+      osc2.frequency.exponentialRampToValueAtTime(210, now + 0.4);
+
+      const g2 = audioContext.createGain();
+      g2.gain.setValueAtTime(0.0001, now);
+      g2.gain.linearRampToValueAtTime(0.5, now + 0.01);
+      g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+
+      osc2.connect(g2).connect(master);
+      osc2.start(now);
+      osc2.stop(now + 0.5);
+
+    } catch (err) {
+      console.warn('playBadPopupSound failed', err);
+    }
+  }
+
+
   window.addEventListener('popUp', (e) => {
         try {
           playPopupSound();
@@ -323,6 +371,14 @@ document.addEventListener('click', (e) => {
           console.warn('popUp handler failed', err);
         }
       });
+
+  window.addEventListener('popUpBad', (e) => {
+          try {
+            playBadPopupSound();
+          } catch (err) {
+            console.warn('popUpBad handler failed', err);
+          }
+        });
 
     window.addEventListener('crewDied', (e) => {
       try {

@@ -24,7 +24,7 @@
       eventDelayMinMs: 8000,
       eventDelayMaxMs: 20000,
       taskTimeMult: 1.1,
-      eventWeights: { hullBreach: 1.4, fire: 1.4, electrical: 1.4, supplyCache: 0.6, calmWaters: 0.6 }
+      eventWeights: { hullBreach: 1.4, fire: 1.4, electrical: 1.4, supplyCache: 0.4, calmWaters: 0.3 }
     },
     'Nightmare': {
       damageMultiplier: 2.6,
@@ -32,7 +32,7 @@
       eventDelayMinMs: 5000,
       eventDelayMaxMs: 12000,
       taskTimeMult: 1.2,
-      eventWeights: { hullBreach: 2.0, fire: 1.6, electrical: 1.8, supplyCache: 0.4, calmWaters: 0.3 }
+      eventWeights: { hullBreach: 2.0, fire: 1.6, electrical: 1.8, supplyCache: 0, calmWaters: 0 }
     }
   };
 

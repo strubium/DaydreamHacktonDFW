@@ -722,7 +722,6 @@ function renderTasks(){
         </div>
         ${ firesOnTask.length > 0 ? `
           <div style="margin-top:8px">
-            <div class="small-muted">Fire intensity</div>
             <div class="fire-bar" title="Assign crew to extinguish"><i style="width:${firePercent}%"></i></div>
           </div>
           ${ extingName !== '—' ? `
@@ -731,8 +730,15 @@ function renderTasks(){
               <div class="extinguish-progress" title="Extinguish progress"><i style="width:${extinguishProgress}%"></i></div>
             </div>` : ''
           }` : '' }
-        <div style="margin-top:6px" class="small-muted">Assigned: <strong>${assignedName}</strong> • Extinguisher: <strong>${extingName === '—' ? (firesOnTask.length ? 'None' : '—') : extingName}</strong> • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)} ${eventBadges ? '• ' + eventBadges : ''}</div>
-      </div>
+            <div style="margin-top:6px" class="small-muted">
+              Assigned: <strong>${assignedName}</strong>
+              ${firesOnTask.length > 0
+                ? ` • Extinguisher: <strong>${extingName === '—' ? 'None' : extingName}</strong>`
+                : ''}
+              • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)}
+              ${eventBadges ? '• ' + eventBadges : ''}
+            </div>
+    </div>
       <div class="actions">
         <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
           <select data-action="assign" data-id="${t.id}">

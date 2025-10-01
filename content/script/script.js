@@ -1,27 +1,4 @@
 (function(){
-  // ---------- Immersive alert/toast UI ----------
-  (function initImmersiveUI(){
-    if (document.getElementById('immersive-ui-root')) return;
-    const root = document.createElement('div');
-    root.id = 'immersive-ui-root';
-    root.innerHTML = `
-      <div id="immersive-modal" class="iu-hidden" role="dialog" aria-modal="true" aria-labelledby="iu-title">
-        <div class="iu-modal-backdrop"></div>
-        <div class="iu-modal-card" role="document">
-          <div class="iu-modal-header">
-            <div id="iu-title" class="iu-title">Confirm</div>
-          </div>
-          <div id="iu-message" class="iu-message"></div>
-          <div class="iu-modal-actions">
-            <button id="iu-cancel" class="iu-btn iu-btn-cancel">Cancel</button>
-            <button id="iu-confirm" class="iu-btn iu-btn-confirm">OK</button>
-          </div>
-        </div>
-      </div>
-      <div id="immersive-toasts" aria-live="polite" aria-atomic="false"></div>
-    `;
-    document.body.appendChild(root);
-  })();
 
   function showToast(message, options = {}) {
 
@@ -124,7 +101,7 @@
       eventDelayMinMs: 25000,
       eventDelayMaxMs: 45000,
       taskTimeMult: 0.9,
-      eventWeights: { hullBreach: 0.5, fire: 0.9, electrical: 0.9, supplyCache: 1.5, calmWaters: 1.2 }
+      eventWeights: { hullBreach: 0.5, fire: 0.5, electrical: 0.9, supplyCache: 1.5, calmWaters: 1.2 }
     },
     'Normal': {
       damageMultiplier: 1.0,
@@ -140,7 +117,7 @@
       eventDelayMinMs: 8000,
       eventDelayMaxMs: 20000,
       taskTimeMult: 1.1,
-      eventWeights: { hullBreach: 1.4, fire: 1.6, electrical: 1.4, supplyCache: 0.6, calmWaters: 0.6 }
+      eventWeights: { hullBreach: 1.4, fire: 1.4, electrical: 1.4, supplyCache: 0.6, calmWaters: 0.6 }
     },
     'Nightmare': {
       damageMultiplier: 2.6,
@@ -148,7 +125,7 @@
       eventDelayMinMs: 5000,
       eventDelayMaxMs: 12000,
       taskTimeMult: 1.2,
-      eventWeights: { hullBreach: 2.0, fire: 2.2, electrical: 1.8, supplyCache: 0.4, calmWaters: 0.3 }
+      eventWeights: { hullBreach: 2.0, fire: 1.6, electrical: 1.8, supplyCache: 0.4, calmWaters: 0.3 }
     }
   };
 
@@ -784,132 +761,183 @@
     return activeEvents.some(ev => ev.type === 'fire' && ev.target === taskId);
   }
 
-  function renderTasks(){
-    if (!tasksContainer) return;
-    tasksContainer.innerHTML = '';
-    tasks.forEach(t=>{
-      const assignedName = t.assigned ? (crew.find(c=>c.id===t.assigned)?.name || 'Unknown') : '—';
-      const extingName = t.extinguisherAssigned ? (crew.find(c=>c.id===t.extinguisherAssigned)?.name || '—') : '—';
-      const percent = Math.min(100, Math.round((t.progress / (t.baseTime * TASK_TIME_MULT))*100));
-      const completed = t.complete;
+function renderTasks(){
+  if (!tasksContainer) return;
+  tasksContainer.innerHTML = '';
+  tasks.forEach(t=>{
+    const assignedName = t.assigned ? (crew.find(c=>c.id===t.assigned)?.name || 'Unknown') : '—';
+    const extingName = t.extinguisherAssigned ? (crew.find(c=>c.id===t.extinguisherAssigned)?.name || '—') : '—';
+    const percent = Math.min(100, Math.round((t.progress / (t.baseTime * TASK_TIME_MULT))*100));
+    const completed = t.complete;
 
-      const eventBadges = (t.events || []).map(e=> {
-        if (e.type === 'fire') return ''; // handled separately
-        if (e.type === 'electrical') return `<span style="color:#ffc857;font-weight:700">E-Surge</span>`;
-        if (e.type === 'hullBreach') return `<span style="color:${'var(--danger)'};font-weight:700">BREACH</span>`;
-        return `<span>${e.type}</span>`;
-      }).filter(Boolean).join(' ');
+    const eventBadges = (t.events || []).map(e=> {
+      if (e.type === 'fire') return ''; // handled separately
+      if (e.type === 'electrical') return `<span style="color:#ffc857;font-weight:700">E-Surge</span>`;
+      if (e.type === 'hullBreach') return `<span style="color:${'var(--danger)'};font-weight:700">BREACH</span>`;
+      return `<span>${e.type}</span>`;
+    }).filter(Boolean).join(' ');
 
-      const firesOnTask = activeEvents.filter(ev => ev.type === 'fire' && ev.target === t.id);
-      // compute average fireHealth / use first fire's fireMax for progress display
-      let firePercent = 0;
-      let extinguishProgress = 0;
-      let extinguisher = null;
-      if (firesOnTask.length > 0){
-        const first = firesOnTask[0];
-        const fh = (first.meta && typeof first.meta.fireHealth === 'number') ? first.meta.fireHealth : 100;
-        const fm = (first.meta && typeof first.meta.fireMax === 'number') ? first.meta.fireMax : 100;
-        firePercent = Math.max(0, Math.round(fh)); // show remaining intensity as percent
-        extinguishProgress = Math.max(0, Math.round( ((fm - fh) / fm) * 100 ));
-      }
+    const firesOnTask = activeEvents.filter(ev => ev.type === 'fire' && ev.target === t.id);
+    // compute average fireHealth / use first fire's fireMax for progress display
+    let firePercent = 0;
+    let extinguishProgress = 0;
+    let extinguisher = null;
+    if (firesOnTask.length > 0){
+      const first = firesOnTask[0];
+      const fh = (first.meta && typeof first.meta.fireHealth === 'number') ? first.meta.fireHealth : 100;
+      const fm = (first.meta && typeof first.meta.fireMax === 'number') ? first.meta.fireMax : 100;
+      firePercent = Math.max(0, Math.round(fh)); // show remaining intensity as percent
+      extinguishProgress = Math.max(0, Math.round( ((fm - fh) / fm) * 100 ));
+    }
 
-      if (t.extinguisherAssigned){
-        const c = crew.find(cc=>cc.id===t.extinguisherAssigned);
-        if (c) extinguisher = c;
-      }
+    if (t.extinguisherAssigned){
+      const c = crew.find(cc=>cc.id===t.extinguisherAssigned);
+      if (c) extinguisher = c;
+    }
 
-      const indicatorColor = completed ? 'var(--good)' : (taskHasActiveFire(t.id) ? 'var(--danger)' : (t.assigned? '#ffc857' : '#444'));
+    const indicatorColor = completed ? 'var(--good)' : (taskHasActiveFire(t.id) ? 'var(--danger)' : (t.assigned? '#ffc857' : '#444'));
 
-      const taskEl = document.createElement('div');
-      taskEl.className = 'task';
-      taskEl.innerHTML =
-        `<div style="width:12px;height:12px;border-radius:3px;background:${indicatorColor}"></div>
-        <div class="info">
-          <div style="display:flex;justify-content:space-between">
-            <div><strong>${t.title}</strong></div>
-            <div class="small-muted">${(t.baseTime * TASK_TIME_MULT).toFixed(0)}s base</div>
-          </div>
-          <div style="margin-top:8px">
-            <div class="repair-bar"><i style="width:${percent}%"></i></div>
-          </div>
-          ${ firesOnTask.length > 0 ? `
-            <div style="margin-top:8px">
-              <div class="small-muted">Fire intensity</div>
-              <div class="fire-bar" title="Assign crew to extinguish"><i style="width:${firePercent}%"></i></div>
-            </div>
-            ${ extingName !== '—' ? `
-              <div style="margin-top:6px">
-                <div class="small-muted">Extinguishing: <strong>${extinguisher ? extinguisher.name : extingName}</strong> • ${extinguishProgress}%</div>
-                <div class="extinguish-progress" title="Extinguish progress"><i style="width:${extinguishProgress}%"></i></div>
-              </div>` : ''
-            }` : '' }
-          <div style="margin-top:6px" class="small-muted">Assigned: <strong>${assignedName}</strong> • Extinguisher: <strong>${extingName === '—' ? (firesOnTask.length ? 'None' : '—') : extingName}</strong> • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)} ${eventBadges ? '• ' + eventBadges : ''}</div>
+    const taskEl = document.createElement('div');
+    taskEl.className = 'task';
+    // allow overlay positioning
+    taskEl.style.position = 'relative';
+    taskEl.style.overflow = 'hidden';
+
+    taskEl.innerHTML =
+      `<div style="width:12px;height:12px;border-radius:3px;background:${indicatorColor}"></div>
+      <div class="info">
+        <div style="display:flex;justify-content:space-between">
+          <div><strong>${t.title}</strong></div>
+          <div class="small-muted">${(t.baseTime * TASK_TIME_MULT).toFixed(0)}s base</div>
         </div>
-        <div class="actions">
-          <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
-            <select data-action="assign" data-id="${t.id}">
-              <option value="">Unassigned</option>
-              ${crew.map(c=>`<option value="${c.id}" ${t.assigned===c.id ? 'selected':''}>${c.name} ${c.health<=0? ' (dead)':''}</option>`).join('')}
-            </select>
-            <button class="small" data-action="fastAssign" data-id="${t.id}">Quick</button>
-            <button class="small" data-action="cancel" data-id="${t.id}">Cancel</button>
+        <div style="margin-top:8px">
+          <div class="repair-bar"><i style="width:${percent}%"></i></div>
+        </div>
+        ${ firesOnTask.length > 0 ? `
+          <div style="margin-top:8px">
+            <div class="small-muted">Fire intensity</div>
+            <div class="fire-bar" title="Assign crew to extinguish"><i style="width:${firePercent}%"></i></div>
           </div>
-          <div style="margin-top:8px;text-align:right">
-            ${completed ? `<div style="color:var(--good);font-weight:700">COMPLETE</div>` : `<div class="small-muted">${percent}%</div>`}
-            ${ firesOnTask.length
-                ? `<div style="margin-top:6px"><button class="small" data-action="assignExtinguish" data-id="${t.id}">${t.extinguisherAssigned ? 'Stop Extinguish' : 'Assign Extinguisher'}</button></div>`
-                : '' }
-          </div>
-        </div>`;
-      tasksContainer.appendChild(taskEl);
-    });
+          ${ extingName !== '—' ? `
+            <div style="margin-top:6px">
+              <div class="small-muted">Extinguishing: <strong>${extinguisher ? extinguisher.name : extingName}</strong> • ${extinguishProgress}%</div>
+              <div class="extinguish-progress" title="Extinguish progress"><i style="width:${extinguishProgress}%"></i></div>
+            </div>` : ''
+          }` : '' }
+        <div style="margin-top:6px" class="small-muted">Assigned: <strong>${assignedName}</strong> • Extinguisher: <strong>${extingName === '—' ? (firesOnTask.length ? 'None' : '—') : extingName}</strong> • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)} ${eventBadges ? '• ' + eventBadges : ''}</div>
+      </div>
+      <div class="actions">
+        <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
+          <select data-action="assign" data-id="${t.id}">
+            <option value="">Unassigned</option>
+            ${crew.map(c=>`<option value="${c.id}" ${t.assigned===c.id ? 'selected':''}>${c.name} ${c.health<=0? ' (dead)':''}</option>`).join('')}
+          </select>
+          <button class="small" data-action="fastAssign" data-id="${t.id}">Quick</button>
+          <button class="small" data-action="cancel" data-id="${t.id}">Cancel</button>
+        </div>
+        <div style="margin-top:8px;text-align:right">
+          ${completed ? `<div style="color:var(--good);font-weight:700">COMPLETE</div>` : `<div class="small-muted">${percent}%</div>`}
+          ${ firesOnTask.length
+              ? `<div style="margin-top:6px"><button class="small" data-action="assignExtinguish" data-id="${t.id}">${t.extinguisherAssigned ? 'Stop Extinguish' : 'Assign Extinguisher'}</button></div>`
+              : '' }
+        </div>
+      </div>`;
 
-    // attach listeners
-    tasksContainer.querySelectorAll('[data-action="assign"]').forEach(sel=>{
-      sel.onchange = ()=> {
-        const taskId = sel.dataset.id;
-        const crewId = sel.value || null;
-        assignCrewToTask(crewId, taskId);
-      };
-    });
-    tasksContainer.querySelectorAll('[data-action="fastAssign"]').forEach(btn=>{
-      btn.onclick = ()=> {
-        const tId = btn.dataset.id;
-        const candidates = crew.filter(c=>c.health>0 && c.repairing==null);
-        if (candidates.length===0) { showToast('No available crew to assign', { red: true}); return; }
-        candidates.sort((a,b)=>b.health - a.health);
-        assignCrewToTask(candidates[0].id, tId);
-        renderTasks();
-        renderCrew();
-      };
-    });
-    tasksContainer.querySelectorAll('[data-action="cancel"]').forEach(btn=>{
-      btn.onclick = ()=> {
-        const tId = btn.dataset.id;
-        unassignTask(tId);
-      };
-    });
-    tasksContainer.querySelectorAll('[data-action="assignExtinguish"]').forEach(btn=>{
-      btn.onclick = async (e)=> {
-        const tId = btn.dataset.id;
-        const t = tasks.find(x=>x.id===tId);
-        if (!t) return;
-        // if already has an extinguisher assigned, unassign them
-        if (t.extinguisherAssigned){
-          const c = crew.find(x=>x.id === t.extinguisherAssigned);
-          if (c) { c.repairing = null; }
-          t.extinguisherAssigned = null;
-          // also clear crew.repairing if it was extinguish
-          if (c && c.repairing && c.repairing.startsWith('extinguish:')) c.repairing = null;
-          showToast('Extinguisher unassigned.');
-          renderAll();
-          return;
-        }
-        // show picker anchored to button
-        showExtinguishPicker(tId, e.currentTarget);
-      };
-    });
-  }
+    // --- FIRE TINT: add red overlay + flame badge ---
+    if (firesOnTask.length > 0) {
+      taskEl.classList.add('on-fire');
+      const total = firesOnTask.reduce((acc, f) => acc + (f.meta?.fireHealth ?? 100), 0);
+      const avgHealth = total / firesOnTask.length;
+      const fireMax = firesOnTask[0].meta?.fireMax ?? 100;
+      const intensity = Math.min(1, Math.max(0, avgHealth / fireMax));
+
+      const baseOpacity = 0.25;   // bump base opacity so it’s always visible
+      const maxExtra   = 0.65;
+      const opacity    = baseOpacity + (maxExtra * intensity);
+
+      taskEl.style.boxShadow = `0 0 25px rgba(255,40,0,${0.2 + 0.4 * intensity})`;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'task-fire-overlay';
+      overlay.style.position = 'absolute';
+      overlay.style.left = '0';
+      overlay.style.top = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.background = `rgba(255,60,20,${opacity})`;
+      overlay.style.opacity = '1';
+      overlay.style.pointerEvents = 'none';
+
+      // 🔥 add a pulsing flame icon in the corner
+      const badge = document.createElement('div');
+      badge.innerHTML = '🔥 ON FIRE!';
+      badge.style.position = 'absolute';
+      badge.style.top = '6px';
+      badge.style.right = '6px';
+      badge.style.padding = '2px 6px';
+      badge.style.borderRadius = '4px';
+      badge.style.background = 'rgba(255,40,0,0.85)';
+      badge.style.color = 'white';
+      badge.style.fontWeight = '700';
+      badge.style.fontSize = '0.85em';
+      badge.style.animation = 'firePulse 1s ease-in-out infinite';
+
+      overlay.appendChild(badge);
+
+      // make overlay pulse faster if very intense
+      if (intensity > 0.65) {
+        overlay.style.animation = 'firePulse 1.2s ease-in-out infinite';
+      }
+
+      taskEl.appendChild(overlay);
+    }
+
+    tasksContainer.appendChild(taskEl);
+  });
+
+  // attach listeners (same as before)
+  tasksContainer.querySelectorAll('[data-action="assign"]').forEach(sel=>{
+    sel.onchange = ()=> {
+      const taskId = sel.dataset.id;
+      const crewId = sel.value || null;
+      assignCrewToTask(crewId, taskId);
+    };
+  });
+  tasksContainer.querySelectorAll('[data-action="fastAssign"]').forEach(btn=>{
+    btn.onclick = ()=> {
+      const tId = btn.dataset.id;
+      const candidates = crew.filter(c=>c.health>0 && c.repairing==null);
+      if (candidates.length===0) { showToast('No available crew to assign', { red: true}); return; }
+      candidates.sort((a,b)=>b.health - a.health);
+      assignCrewToTask(candidates[0].id, tId);
+      renderTasks();
+      renderCrew();
+    };
+  });
+  tasksContainer.querySelectorAll('[data-action="cancel"]').forEach(btn=>{
+    btn.onclick = ()=> {
+      const tId = btn.dataset.id;
+      unassignTask(tId);
+    };
+  });
+  tasksContainer.querySelectorAll('[data-action="assignExtinguish"]').forEach(btn=>{
+    btn.onclick = async (e)=> {
+      const tId = btn.dataset.id;
+      const t = tasks.find(x=>x.id===tId);
+      if (!t) return;
+      if (t.extinguisherAssigned){
+        const c = crew.find(x=>x.id === t.extinguisherAssigned);
+        if (c) { c.repairing = null; }
+        t.extinguisherAssigned = null;
+        if (c && c.repairing && c.repairing.startsWith('extinguish:')) c.repairing = null;
+        showToast('Extinguisher unassigned.');
+        renderAll();
+        return;
+      }
+      showExtinguishPicker(tId, e.currentTarget);
+    };
+  });
+}
 
  // Define icons for each event type
  const EVENT_ICONS = {

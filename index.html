@@ -104,6 +104,24 @@
         </div>
     </div>
 </div>
+
+<div id="immersive-ui-root">
+    <div id="immersive-modal" class="iu-hidden" role="dialog" aria-modal="true" aria-labelledby="iu-title" aria-describedby="iu-message">
+        <div class="iu-modal-backdrop" data-iu-backdrop></div>
+        <div class="iu-modal-card" role="document" aria-live="polite">
+            <div class="iu-modal-header">
+                <div id="iu-title" class="iu-title">Confirm</div>
+            </div>
+            <div id="iu-message" class="iu-message"></div>
+            <div class="iu-modal-actions">
+                <button id="iu-cancel" class="iu-btn iu-btn-cancel">Cancel</button>
+                <button id="iu-confirm" class="iu-btn iu-btn-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="immersive-toasts" aria-live="polite" aria-atomic="false"></div>
+</div>
 <script src="content/script/lang.js"></script>
 <script src="content/script/script.js"></script>
 <script src="content/script/music.js"></script>

@@ -262,3 +262,61 @@ button.small {
 }
 .event-badge .icon { margin-right: 6px; }
 
+@keyframes firePulse {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.task-fire-overlay {
+  z-index: 1;
+}
+.task .info,
+.task .actions {
+  position: relative;
+  z-index: 2; /* ensure text stays above tint */
+}
+
+/* === FIRE STATE STYLING === */
+.task.on-fire {
+  border: 2px solid var(--danger);
+  background: linear-gradient(180deg, #1a0b0b, #0b0505); /* darker bg for readability */
+  box-shadow: 0 0 12px rgba(255, 60, 20, 0.4),
+              inset 0 0 8px rgba(255, 60, 20, 0.2);
+}
+
+.task.on-fire .info,
+.task.on-fire .actions {
+  color: #fffbe8; /* warmer white for better readability */
+  text-shadow: 0 0 6px rgba(255, 100, 40, 0.6);
+}
+
+.task.on-fire .small-muted,
+.task.on-fire .muted {
+  color: #ffd4b0; /* lighter muted text so it doesn't vanish */
+}
+
+.task.on-fire button,
+.task.on-fire select {
+  border-color: var(--danger);
+}
+.task.on-fire button:hover {
+  background: var(--danger);
+  color: #000;
+  text-shadow: none;
+}
+
+
+  @keyframes firePulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.01); opacity: 0.86; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .task-fire-overlay {
+    mix-blend-mode: screen;
+    border-radius: 6px;
+    transition: opacity .35s ease, transform .35s ease;
+    pointer-events: none;
+  }
+
+

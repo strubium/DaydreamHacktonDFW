@@ -7,10 +7,90 @@
     <link rel="stylesheet" href="content/style/style.css">
     <script src="https://unpkg.com/i18next@23.0.1/dist/umd/i18next.min.js"></script>
     <script src="https://unpkg.com/i18next-http-backend@2.2.1/i18nextHttpBackend.min.js"></script>
+    <style>
+        /* === Main Menu Styling === */
+        .main-menu {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            background: repeating-linear-gradient(
+                180deg,
+                var(--panel) 0px,
+                var(--panel) 2px,
+                #0a0c12 4px
+            );
+            border: 2px solid var(--accent);
+            padding: 24px 32px;
+            box-shadow: inset 0 0 12px rgba(0, 180, 255, 0.2),
+                        0 0 20px rgba(0, 180, 255, 0.3);
+            z-index: 9999;
+            max-width: 440px;
+            margin: auto;
+            text-align: center;
+            color: #e9eef6;
+            font-family: "Press Start 2P", monospace, system-ui;
+        }
+        .main-menu h1 {
+            color: var(--accent);
+            font-size: 20px;
+            margin-bottom: 12px;
+            text-shadow: 0 0 4px rgba(43,179,255,0.5);
+        }
+        .main-menu select,
+        .main-menu button {
+            width: 100%;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 6px 8px;
+            border: 2px solid var(--accent);
+            background: #080a0d;
+            color: #e9eef6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .main-menu select { margin-bottom: 12px; }
+        .main-menu button:hover {
+            background: var(--accent);
+            color: #000;
+            text-shadow: none;
+        }
+        .main-menu .btn-small { font-size: 12px; padding: 4px 8px; margin-top: 4px; }
+
+        /* Hide the main app initially */
+        .app.hidden { display: none; }
+    </style>
 </head>
 <body>
-<!-- Welcome overlay -->
-<div id="welcome-overlay" class="overlay">
+
+<!-- === Main Menu === -->
+<div class="main-menu">
+    <h1 data-i18n="welcome_title">Surface & Repair</h1>
+    <p class="small-muted" data-i18n="welcome_text_1">You're in command of a stranded sub. Prepare your crew and surface safely.</p>
+
+    <div style="width:100%; text-align:left;">
+        <label class="small-muted" for="difficultySelect" data-i18n="difficulty_label">Difficulty</label>
+        <select id="difficultySelect" aria-label="Select difficulty">
+            <option value="Normal" data-i18n="difficulty_normal">Normal — Balanced</option>
+            <option value="Easy" data-i18n="difficulty_easy">Easy — fewer events, lower damage</option>
+            <option value="Hard" data-i18n="difficulty_hard">Hard — more events, higher damage</option>
+            <option value="Nightmare" data-i18n="difficulty_nightmare">Nightmare — relentless danger</option>
+        </select>
+    </div>
+
+    <button id="btn-start" data-i18n="btn_start">Start</button>
+    <button id="btn-tutorial" class="btn-small" data-i18n="btn_tutorial">Tutorial</button>
+    <button id="btn-reset-upgrades" class="btn-small" data-i18n="btn_reset_upgrades">Reset Upgrades</button>
+</div>
+
+<!-- === Existing Overlays and App Content === -->
+<div id="welcome-overlay" class="overlay" style="display:none">
+    <!-- Original welcome modal stays intact -->
     <div class="modal">
         <h1 style="margin:0 0 6px 0" data-i18n="welcome_title">Welcome — Surface & Repair</h1>
         <div id="welcome-text" class="muted">
@@ -24,28 +104,14 @@
                 <li data-i18n="task_li_5">The Medic can be assigned to slowly <strong>heal</strong> other crew members. You can also buy an Auto-Heal Module so the Medic will automatically heal idle crew members.</li>
             </ul>
             <p class="small-muted" data-i18n="tip_text">Tip: Upgrading the Medic early helps keep your repairers alive while they work on the dangerous systems.</p>
-
-            <div style="margin-top:12px;">
-                <label class="small-muted" for="difficultySelect" data-i18n="difficulty_label">Difficulty</label>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-                    <select id="difficultySelect" aria-label="Select difficulty">
-                        <option value="Normal" data-i18n="difficulty_normal">Normal — Balanced</option>
-                        <option value="Easy" data-i18n="difficulty_easy">Easy — fewer events, lower damage</option>
-                        <option value="Hard" data-i18n="difficulty_hard">Hard — more events, higher damage</option>
-                        <option value="Nightmare" data-i18n="difficulty_nightmare">Nightmare — relentless danger</option>
-                    </select>
-                    <div id="difficultyDesc" class="small-muted" style="max-width:560px" data-i18n="difficulty_desc"></div>
-                </div>
-            </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
-            <button id="btn-reset-upgrades" class="small" data-i18n="btn_reset_upgrades">Reset Upgrades</button>
-            <button id="btn-start" style="background:var(--accent);border:none;padding:8px 12px;border-radius:8px" data-i18n="btn_start">Start</button>
+            <button id="btn-reset-upgrades-old" class="small" data-i18n="btn_reset_upgrades">Reset Upgrades</button>
+            <button id="btn-start-old" style="background:var(--accent);border:none;padding:8px 12px;border-radius:8px" data-i18n="btn_start">Start</button>
         </div>
     </div>
 </div>
 
-<!-- End / Victory overlay -->
 <div id="end-overlay" class="overlay" style="display:none">
     <div class="modal">
         <h1 id="end-title" data-i18n="end_title">YOU SURFACED — VICTORY</h1>
@@ -56,25 +122,21 @@
     </div>
 </div>
 
-<div class="app" role="main">
-    <!-- Left: Crew -->
+<div class="app hidden" role="main">
+    <!-- All your left/center/right panels remain untouched -->
     <div class="panel crew-list" aria-label="crew panel">
         <div class="topbar">
             <h2 data-i18n="panel_crew">Crew</h2>
             <div class="muted small-muted" data-i18n="supplies_label">Supplies: <span id="supplies" class="currency">0</span></div>
         </div>
-
         <div id="crewContainer"></div>
-
         <hr style="border-color:#111;margin:10px 0">
-
         <div>
             <h2 class="muted" style="font-size:14px" data-i18n="saved_upgrades_title">Saved upgrades</h2>
             <p class="small-muted" data-i18n="saved_upgrades_desc">Upgrades persist in localStorage until reset.</p>
         </div>
     </div>
 
-    <!-- Center: Tasks -->
     <div class="panel center-stage">
         <div class="topbar">
             <h2 data-i18n="panel_systems">Critical Systems</h2>
@@ -83,22 +145,18 @@
                 <div class="small-muted" data-i18n="systems_instructions">Assign crew -> Repairs progress -> Finish all to surface</div>
             </div>
         </div>
-
         <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="small-muted" data-i18n="active_events">Active events:</div>
             <div id="eventLog" class="event-log"></div>
         </div>
-
         <div id="tasksContainer"></div>
     </div>
 
-    <!-- Right: Upgrades / Details -->
     <div class="panel" aria-label="upgrades panel">
         <div class="topbar">
             <h2 data-i18n="panel_upgrades">Upgrades</h2>
             <div class="small-muted" data-i18n="upgrades_instruction">Open a crew's upgrade panel from their card</div>
         </div>
-
         <div id="upgradePanel">
             <p class="small-muted" data-i18n="upgrade_panel_placeholder">Select a crew to view/purchase upgrades.</p>
         </div>
@@ -122,9 +180,35 @@
 
     <div id="immersive-toasts" aria-live="polite" aria-atomic="false"></div>
 </div>
+
 <script src="content/script/lang.js"></script>
 <script src="content/script/popups.js"></script>
 <script src="content/script/script.js"></script>
+<script src="content/script/tutorial.js"></script>
 <script src="content/script/music.js"></script>
+<script>
+    (function(){
+        const startBtn = document.getElementById('btn-start');
+        const tutorialBtn = document.getElementById('btn-tutorial');
+        const resetBtn = document.getElementById('btn-reset-upgrades');
+        const menu = document.querySelector('.main-menu');
+        const app = document.querySelector('.app');
+
+        startBtn.addEventListener('click', () => {
+            menu.style.display = 'none';
+            app.classList.remove('hidden');
+        });
+
+        tutorialBtn.addEventListener('click', () => {
+            menu.style.display = 'none';
+            app.classList.remove('hidden');
+            if(window.SubDemoTutorial?.start) window.SubDemoTutorial.start();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if(window.resetUpgrades) window.resetUpgrades();
+        });
+    })();
+</script>
 </body>
 </html>

@@ -20,6 +20,7 @@
   "end_title": "YOU SURFACED — VICTORY",
   "end_sub": "Thanks for playing the game.",
   "btn_restart": "Restart",
+  "btn_tutorial": "Tutorial",
   "panel_crew": "Crew",
   "supplies_label": "Supplies: <span id='supplies' class='currency'>0</span>",
   "saved_upgrades_title": "Saved upgrades",

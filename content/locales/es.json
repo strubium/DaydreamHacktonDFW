@@ -20,6 +20,7 @@
   "end_title": "HAS AFORADO — VICTORIA",
   "end_sub": "Gracias por jugar el juego.",
   "btn_restart": "Reiniciar",
+  "btn_tutorial": "Tutorial",
   "panel_crew": "Tripulación",
   "supplies_label": "Recursos: <span id='supplies' class='currency'>0</span>",
   "saved_upgrades_title": "Mejoras guardadas",

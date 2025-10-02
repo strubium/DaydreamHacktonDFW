@@ -1517,12 +1517,6 @@ function renderTasks(){
     if (document.getElementById('welcome-overlay') && document.getElementById('welcome-overlay').style.display === 'none'){
       startLoop();
     }
-    window.addEventListener('keydown', (e)=>{
-      if (e.key.toLowerCase() === 'h'){
-        const o = document.getElementById('welcome-overlay');
-        if (o) o.style.display = (o.style.display === 'none' || !o.style) ? 'flex' : 'none';
-      }
-    });
   }
 
   crew.forEach(c => applyCrewUpgradeStats(c));

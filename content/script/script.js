@@ -1523,6 +1523,6 @@ function renderTasks(){
   init();
 
   // Expose some functions for debugging in console
-  window.__SUB_DEMO = { crew, tasks, save, resetUpgrades, assignCrewToTask, unassignTask, requestHeal, activeEvents, spawnRandomEvent, applyDifficulty, DIFFICULTY_PRESETS };
+  window.__SUB_DEMO = { crew, tasks, save, resetUpgrades, assignCrewToTask, unassignTask, requestHeal, activeEvents, spawnRandomEvent, applyDifficulty, DIFFICULTY_PRESETS, startLoop };
 
 })();

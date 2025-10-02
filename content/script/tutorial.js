@@ -467,6 +467,8 @@
     window.removeEventListener('resize', onResize);
     window.removeEventListener('keydown', onKeyDown);
     showTempMessage('Tutorial closed');
+
+    window.__SUB_DEMO.startLoop();
   }
 
   function onKeyDown(e) {

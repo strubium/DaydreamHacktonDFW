@@ -108,6 +108,7 @@ const steps = [
     text: `That's the quick tour! You can replay this tutorial anytime. Press Finish to close the tutorial.`,
     selector: null,
     position: 'center',
+    nextText: 'Finish',
     validate: () => true
   }
 ];
@@ -389,6 +390,8 @@ function placePopupNear(target, position = 'right') {
       // update prev/next button state
       const prevBtn = popupEl.querySelector('#tutorial-prev');
       const nextBtn = popupEl.querySelector('#tutorial-next');
+      nextBtn.textContent = step.nextText || 'Next'; // dynamic label
+
       const autoBtn = popupEl.querySelector('#tutorial-auto');
 
       prevBtn.disabled = (currentStep <= 0);

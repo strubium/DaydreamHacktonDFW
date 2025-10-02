@@ -1,0 +1,31 @@
+[
+  {
+    "id": "assign",
+    "title": "Assign a Crew Member",
+    "text": "Assign a crew member to a repair: open the \"Assign\" select on a task and choose a crew. Use Quick to auto-assign the healthiest available crew.",
+    "selector": "[data-action=\"assign\"]",
+    "position": "right"
+  },
+  {
+    "id": "upgrades",
+    "title": "Open Upgrades Panel",
+    "text": "You can buy upgrades for each crew member. Click Upgrades on a crew card to open the panel and purchase levels with supplies.",
+    "selector": "[data-action=\"openUpgrades\"]",
+    "position": "right"
+  },
+  {
+    "id": "medic",
+    "title": "Use Medic — Request Heal",
+    "text": "Request a Medic to heal a wounded crew member. Click Heal on a crew card to have the Medic start healing.",
+    "selector": "[data-action=\"requestHeal\"]",
+    "position": "left"
+  },
+  {
+    "id": "wrap-up",
+    "title": "Wrap Up",
+    "text": "That's the quick tour! You can replay this tutorial anytime. Press Finish to close the tutorial.",
+    "selector": null,
+    "position": "center",
+    "nextText": "Finish"
+  }
+]

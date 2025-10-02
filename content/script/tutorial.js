@@ -27,91 +27,75 @@
     });
   }
 
-  // tutorial steps
-  const steps = [
-    {
-      id: 'assign',
-      title: 'Assign a Crew Member',
-      text: `Assign a crew member to a repair: open the "Assign" select on a task and choose a crew. Use Quick to auto-assign the healthiest available crew.`,
-      selector: '[data-action="assign"]',
-      position: 'right',
-      onEnter: async function(api){
-        // nothing
-      },
-      validate: () => {
-        // true when any task has an assigned crew
-        const sel = document.querySelectorAll('[data-action="assign"]');
-        for (const s of sel){
-          if (s.value && s.value !== '') return true;
-        }
-        return false;
-      },
-      autoAction: async function(api){
-        // prefer to hit the "Quick" button on first task
-        const quick = document.querySelector('[data-action="fastAssign"]');
-        if (quick) { quick.click(); return true; }
-        // else try to programmatically assign: pick first available crew & first task
-        const dd = document.querySelector('[data-action="assign"]');
-        if (!dd) return false;
-        const crewOption = dd.querySelector('option[value]') || dd.options[1];
-        if (!crewOption) return false;
-        dd.value = dd.querySelector('option[value]') ? dd.querySelector('option[value]').value : dd.options[1].value;
-        dd.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      }
-    },
-    {
-      id: 'upgrades',
-      title: 'Open Upgrades Panel',
-      text: `You can buy upgrades for each crew member. Click Upgrades on a crew card to open the panel and purchase levels with supplies.`,
-      selector: '[data-action="openUpgrades"]',
-      position: 'right',
-      validate: () => {
-        const panel = document.getElementById('upgradePanel');
-        return !!(panel && panel.dataset && panel.dataset.openCrew);
-      },
-      autoAction: async function(api){
-        // click the first Upgrades button for an alive crew
-        const btn = document.querySelector('[data-action="openUpgrades"]');
-        if (btn) { btn.click(); return true; }
-        return false;
-      }
-    },
-    {
-      id: 'medic',
-      title: 'Use Medic — Request Heal',
-      text: `Request a Medic to heal a wounded crew member. Click Heal on a crew card to have the Medic start healing.`,
-      selector: '[data-action="requestHeal"]',
-      position: 'left',
-      validate: () => {
-        const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
-        if (!medic) return false;
-        return !!(medic.repairing && medic.repairing.startsWith('healing:'));
-      },
-      autoAction: async function(api){
-        const btn = document.querySelector('[data-action="requestHeal"]');
-        if (btn) { btn.click(); return true; }
-        const dd = document.querySelector('[data-action="requestHeal"][data-target]');
-        if (dd) {
-          const id = dd.dataset.target;
-          if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
-            window.__SUB_DEMO.requestHeal(id);
-            return true;
+    let steps = [];
+
+    async function loadSteps() {
+      try {
+        const res = await fetch('content/tutorial/tutorial_steps.json');
+        const data = await res.json();
+        steps = data.map(step => {
+          // attach function hooks for specific steps
+          if (step.id === 'assign') {
+            step.validate = () => {
+              const sel = document.querySelectorAll('[data-action="assign"]');
+              for (const s of sel){
+                if (s.value && s.value !== '') return true;
+              }
+              return false;
+            };
+            step.autoAction = async function() {
+              const quick = document.querySelector('[data-action="fastAssign"]');
+              if (quick) { quick.click(); return true; }
+              const dd = document.querySelector('[data-action="assign"]');
+              if (!dd) return false;
+              const crewOption = dd.querySelector('option[value]') || dd.options[1];
+              if (!crewOption) return false;
+              dd.value = crewOption.value;
+              dd.dispatchEvent(new Event('change', { bubbles: true }));
+              return true;
+            };
           }
-        }
-        return false;
+          if (step.id === 'upgrades') {
+            step.validate = () => {
+              const panel = document.getElementById('upgradePanel');
+              return !!(panel && panel.dataset && panel.dataset.openCrew);
+            };
+            step.autoAction = async function() {
+              const btn = document.querySelector('[data-action="openUpgrades"]');
+              if (btn) { btn.click(); return true; }
+              return false;
+            };
+          }
+          if (step.id === 'medic') {
+            step.validate = () => {
+              const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
+              if (!medic) return false;
+              return !!(medic.repairing && medic.repairing.startsWith('healing:'));
+            };
+            step.autoAction = async function() {
+              const btn = document.querySelector('[data-action="requestHeal"]');
+              if (btn) { btn.click(); return true; }
+              const dd = document.querySelector('[data-action="requestHeal"][data-target]');
+              if (dd) {
+                const id = dd.dataset.target;
+                if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
+                  window.__SUB_DEMO.requestHeal(id);
+                  return true;
+                }
+              }
+              return false;
+            };
+          }
+          if (step.id === 'wrap-up') {
+            step.validate = () => true;
+          }
+          return step;
+        });
+      } catch (err) {
+        console.error('Failed to load tutorial steps', err);
       }
-    },
-    {
-      id: 'wrap-up',
-      title: 'Wrap Up',
-      text: `That's the quick tour! You can replay this tutorial anytime. Press Finish to close the tutorial.`,
-      selector: null,
-      position: 'center',
-      nextText: 'Finish',
-      validate: () => true
     }
-  ];
+
 
 
   // Tutorial state
@@ -453,17 +437,22 @@
     renderStep();
   }
 
-  function start() {
-    if (running) return;
-    running = true;
-    currentStep = 0;
-    createOverlay();
-    renderStep();
-    window.addEventListener('resize', onResize);
-    // small accessibility: allow Escape to exit
-    window.addEventListener('keydown', onKeyDown);
-    showTempMessage('Tutorial started — press Esc to exit');
-  }
+    async function start() {
+      if (running) return;
+      running = true;
+      currentStep = 0;
+      await loadSteps();
+      if (!steps.length) {
+        console.error("No tutorial steps loaded!");
+        running = false;
+        return;
+      }
+      createOverlay();
+      renderStep();
+      window.addEventListener('resize', onResize);
+      window.addEventListener('keydown', onKeyDown);
+      showTempMessage('Tutorial started — press Esc to exit');
+    }
 
   function stop() {
     running = false;

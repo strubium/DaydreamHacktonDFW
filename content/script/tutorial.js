@@ -11,61 +11,6 @@
 (function () {
   if (window.SubDemoTutorial) return; // already loaded
 
-  const TUTORIAL_CSS = `
-  .tutorial-overlay {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 99990;
-  }
-  .tutorial-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(2,8,12,0.55);
-    pointer-events: auto;
-  }
-  .tutorial-popup {
-    position: absolute;
-    max-width: 420px;
-    background: linear-gradient(180deg,#081018,#041015);
-    border: 1px solid rgba(255,255,255,0.06);
-    color: #dfeff7;
-    padding: 14px;
-    border-radius: 8px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-    pointer-events: auto;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  }
-  .tutorial-popup h3 { margin: 0 0 6px 0; font-size: 16px; }
-  .tutorial-popup p { margin: 0 0 10px 0; font-size: 13px; color: #b9dbe9; }
-  .tutorial-controls { display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-top:8px; }
-  .tutorial-btn { background: #0b2b3a; color:#dff3ff; border:1px solid rgba(255,255,255,0.04); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:13px; }
-  .tutorial-btn.small { padding:4px 8px; font-size:12px; }
-  .tutorial-highlight {
-    position: relative;
-    z-index: 99992 !important;
-    box-shadow: 0 0 0 3px rgba(43,179,255,0.12), 0 8px 30px rgba(12,40,60,0.6);
-    transition: box-shadow 220ms, transform 220ms;
-    transform: translateZ(0);
-    border-radius: 8px;
-  }
-  .tutorial-arrow {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    z-index: 99993;
-    transform: rotate(45deg);
-    background: #0b2b3a;
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-  }
-  `;
-
-  // inject CSS
-  const style = document.createElement('style');
-  style.textContent = TUTORIAL_CSS;
-  document.head.appendChild(style);
-
   function $(sel){ return document.querySelector(sel); }
   function $all(sel){ return Array.from(document.querySelectorAll(sel)); }
 
@@ -180,6 +125,17 @@ const steps = [
   function createOverlay() {
     overlayEl = document.createElement('div');
     overlayEl.className = 'tutorial-overlay';
+    // ensure overlay covers viewport so getBoundingClientRect coords match
+    Object.assign(overlayEl.style, {
+      position: 'fixed',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+      zIndex: 99999,
+      pointerEvents: 'none' // allow clicks to pass through except popup (we'll enable popup)
+    });
+
     overlayEl.innerHTML = `
       <div class="tutorial-backdrop" id="tutorial-backdrop"></div>
       <div id="tutorial-popup-root"></div>
@@ -191,8 +147,10 @@ const steps = [
 
     popupEl = document.createElement('div');
     popupEl.className = 'tutorial-popup';
+    popupEl.style.position = 'absolute';
     popupEl.style.left = '16px';
     popupEl.style.top = '16px';
+    popupEl.style.pointerEvents = 'auto'; // allow interacting with popup controls
     popupEl.innerHTML = `
       <h3 id="tutorial-title">Title</h3>
       <p id="tutorial-text">Text</p>
@@ -208,7 +166,13 @@ const steps = [
     // arrow for connecting popup to highlight
     arrowEl = document.createElement('div');
     arrowEl.className = 'tutorial-arrow';
-    arrowEl.style.display = 'none';
+    Object.assign(arrowEl.style, {
+      position: 'absolute',
+      width: '18px',
+      height: '18px',
+      display: 'none',
+      pointerEvents: 'none' // arrow should not block clicks
+    });
     overlayEl.appendChild(arrowEl);
 
     // attach control events
@@ -220,16 +184,12 @@ const steps = [
       if (step && typeof step.autoAction === 'function'){
         try {
           await step.autoAction();
-          // small wait then validate
           setTimeout(()=> { tryAdvanceIfValid(); }, 450);
         } catch(e){ console.warn('Auto action failed', e); }
       } else {
-        // if no autoAction, do nothing
         showTempMessage('No automatic action available for this step');
       }
     };
-
-    // click outside to step forward? no, avoid interfering
   }
 
   function cleanupOverlay() {
@@ -273,88 +233,124 @@ const steps = [
     highlightEl = null;
   }
 
-  function placePopupNear(target, position = 'right') {
-    if (!popupEl) return;
+function placePopupNear(target, position = 'right') {
+  if (!popupEl) return;
 
-    // default position if no target
-    if (!target) {
-      popupEl.style.left = 'calc(50% - 220px)';
-      popupEl.style.top = '12%';
-      arrowEl.style.display = 'none';
-      return;
-    }
+  // ensure popup is measurable and not influenced by previous left/top
+  popupEl.style.visibility = 'hidden';
+  popupEl.style.left = '0px';
+  popupEl.style.top = '0px';
+  // force layout so offsetWidth/Height are correct
+  const pW = popupEl.offsetWidth;
+  const pH = popupEl.offsetHeight;
+  popupEl.style.visibility = '';
 
-    const rect = target.getBoundingClientRect();
-    const pad = 12;
-    let left = 20, top = 20;
+  const pad = 12;
 
-    switch (position) {
-      case 'right':
-        left = Math.min(window.innerWidth - popupEl.offsetWidth - 12, rect.right + pad);
-        top = Math.max(12, rect.top + (rect.height / 2) - (popupEl.offsetHeight / 2));
-        break;
-      case 'left':
-        left = Math.max(12, rect.left - popupEl.offsetWidth - pad);
-        top = Math.max(12, rect.top + (rect.height / 2) - (popupEl.offsetHeight / 2));
-        break;
-      case 'bottom':
-        left = Math.max(12, rect.left + (rect.width / 2) - (popupEl.offsetWidth / 2));
-        top = Math.min(window.innerHeight - popupEl.offsetHeight - 12, rect.bottom + pad);
-        break;
-      case 'top':
-        left = Math.max(12, rect.left + (rect.width / 2) - (popupEl.offsetWidth / 2));
-        top = Math.max(12, rect.top - popupEl.offsetHeight - pad);
-        break;
-      case 'center':
-      default:
-        left = Math.max(12, (window.innerWidth / 2) - (popupEl.offsetWidth / 2));
-        top = Math.max(12, (window.innerHeight / 2) - (popupEl.offsetHeight / 2));
-        break;
-    }
-
-    popupEl.style.left = left + 'px';
-    popupEl.style.top = top + 'px';
-
-    // --- arrow positioning ---
-    if (!arrowEl) return;
-    arrowEl.style.display = 'block';
-    const px = popupEl.getBoundingClientRect();
-    const tx = target.getBoundingClientRect();
-
-    let arrowLeft = px.left;
-    let arrowTop = px.top;
-
-    switch (position) {
-      case 'right':
-        // arrow on left edge, vertically centered to target
-        arrowLeft = px.left - 9;
-        arrowTop = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
-        break;
-      case 'left':
-        // arrow on right edge, vertically centered
-        arrowLeft = px.right - 9;
-        arrowTop = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
-        break;
-      case 'top':
-        // arrow on bottom edge, horizontally centered
-        arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
-        arrowTop = px.bottom - 9;
-        break;
-      case 'bottom':
-        // arrow on top edge, horizontally centered
-        arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
-        arrowTop = px.top - 9;
-        break;
-      default:
-        // center arrow top-left
-        arrowLeft = px.left;
-        arrowTop = px.top;
-        break;
-    }
-
-    arrowEl.style.left = arrowLeft + 'px';
-    arrowEl.style.top = arrowTop + 'px';
+  // no target -> center
+  if (!target) {
+    popupEl.style.left = Math.max(12, (window.innerWidth / 2) - (pW / 2)) + 'px';
+    popupEl.style.top  = Math.max(12, (window.innerHeight / 2) - (pH / 2)) + 'px';
+    arrowEl.style.display = 'none';
+    return;
   }
+
+  const rect = target.getBoundingClientRect();
+  const space = {
+    left: rect.left,
+    right: window.innerWidth - rect.right,
+    top: rect.top,
+    bottom: window.innerHeight - rect.bottom
+  };
+
+  // choose position, but fall back if not enough space
+  let usedPos = position;
+  if (position === 'left' && space.left < (pW + pad)) {
+    if (space.right >= (pW + pad)) usedPos = 'right';
+    else if (space.top >= (pH + pad)) usedPos = 'top';
+    else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+    else usedPos = 'center';
+  } else if (position === 'right' && space.right < (pW + pad)) {
+    if (space.left >= (pW + pad)) usedPos = 'left';
+    else if (space.top >= (pH + pad)) usedPos = 'top';
+    else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+    else usedPos = 'center';
+  } else if (position === 'top' && space.top < (pH + pad)) {
+    if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+    else if (space.right >= (pW + pad)) usedPos = 'right';
+    else if (space.left >= (pW + pad)) usedPos = 'left';
+    else usedPos = 'center';
+  } else if (position === 'bottom' && space.bottom < (pH + pad)) {
+    if (space.top >= (pH + pad)) usedPos = 'top';
+    else if (space.right >= (pW + pad)) usedPos = 'right';
+    else if (space.left >= (pW + pad)) usedPos = 'left';
+    else usedPos = 'center';
+  }
+
+  let left = 20, top = 20;
+  switch (usedPos) {
+    case 'right':
+      left = Math.min(window.innerWidth - pW - 12, rect.right + pad);
+      top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
+      break;
+    case 'left':
+      left = Math.max(12, rect.left - pW - pad);
+      top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
+      break;
+    case 'bottom':
+      left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
+      top = Math.min(window.innerHeight - pH - 12, rect.bottom + pad);
+      break;
+    case 'top':
+      left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
+      top = Math.max(12, rect.top - pH - pad);
+      break;
+    case 'center':
+    default:
+      left = Math.max(12, (window.innerWidth / 2) - (pW / 2));
+      top = Math.max(12, (window.innerHeight / 2) - (pH / 2));
+      break;
+  }
+
+  popupEl.style.left = left + 'px';
+  popupEl.style.top  = top  + 'px';
+
+  // arrow: show/hide + position it near the popup and target
+  if (!arrowEl) return;
+  if (usedPos === 'center') {
+    arrowEl.style.display = 'none';
+    return;
+  }
+  arrowEl.style.display = 'block';
+
+  const px = popupEl.getBoundingClientRect();
+  const tx = rect;
+
+  let arrowLeft = px.left;
+  let arrowTop  = px.top;
+
+  switch (usedPos) {
+    case 'right':
+      arrowLeft = px.left - 9;
+      arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
+      break;
+    case 'left':
+      arrowLeft = px.right - 9;
+      arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
+      break;
+    case 'top':
+      arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
+      arrowTop  = px.bottom - 9;
+      break;
+    case 'bottom':
+      arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
+      arrowTop  = px.top - 9;
+      break;
+  }
+
+  arrowEl.style.left = arrowLeft + 'px';
+  arrowEl.style.top  = arrowTop  + 'px';
+}
 
   function renderStep() {
       if (!overlayEl) createOverlay();
@@ -450,6 +446,12 @@ const steps = [
   function stop() {
     running = false;
     cleanupOverlay();
+
+    // ✅ remove highlight from any leftover elements
+    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+      el.classList.remove('tutorial-highlight');
+    });
+
     clearHighlight();
     window.removeEventListener('resize', onResize);
     window.removeEventListener('keydown', onKeyDown);

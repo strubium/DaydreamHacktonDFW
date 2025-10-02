@@ -27,91 +27,91 @@
     });
   }
 
-// tutorial steps
-const steps = [
-  {
-    id: 'assign',
-    title: 'Assign a Crew Member',
-    text: `Assign a crew member to a repair: open the "Assign" select on a task and choose a crew. Use Quick to auto-assign the healthiest available crew.`,
-    selector: '[data-action="assign"]',
-    position: 'right',
-    onEnter: async function(api){
-      // nothing
-    },
-    validate: () => {
-      // true when any task has an assigned crew
-      const sel = document.querySelectorAll('[data-action="assign"]');
-      for (const s of sel){
-        if (s.value && s.value !== '') return true;
-      }
-      return false;
-    },
-    autoAction: async function(api){
-      // prefer to hit the "Quick" button on first task
-      const quick = document.querySelector('[data-action="fastAssign"]');
-      if (quick) { quick.click(); return true; }
-      // else try to programmatically assign: pick first available crew & first task
-      const dd = document.querySelector('[data-action="assign"]');
-      if (!dd) return false;
-      const crewOption = dd.querySelector('option[value]') || dd.options[1];
-      if (!crewOption) return false;
-      dd.value = dd.querySelector('option[value]') ? dd.querySelector('option[value]').value : dd.options[1].value;
-      dd.dispatchEvent(new Event('change', { bubbles: true }));
-      return true;
-    }
-  },
-  {
-    id: 'upgrades',
-    title: 'Open Upgrades Panel',
-    text: `You can buy upgrades for each crew member. Click Upgrades on a crew card to open the panel and purchase levels with supplies.`,
-    selector: '[data-action="openUpgrades"]',
-    position: 'right',
-    validate: () => {
-      const panel = document.getElementById('upgradePanel');
-      return !!(panel && panel.dataset && panel.dataset.openCrew);
-    },
-    autoAction: async function(api){
-      // click the first Upgrades button for an alive crew
-      const btn = document.querySelector('[data-action="openUpgrades"]');
-      if (btn) { btn.click(); return true; }
-      return false;
-    }
-  },
-  {
-    id: 'medic',
-    title: 'Use Medic — Request Heal',
-    text: `Request a Medic to heal a wounded crew member. Click Heal on a crew card to have the Medic start healing.`,
-    selector: '[data-action="requestHeal"]',
-    position: 'left',
-    validate: () => {
-      const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
-      if (!medic) return false;
-      return !!(medic.repairing && medic.repairing.startsWith('healing:'));
-    },
-    autoAction: async function(api){
-      const btn = document.querySelector('[data-action="requestHeal"]');
-      if (btn) { btn.click(); return true; }
-      const dd = document.querySelector('[data-action="requestHeal"][data-target]');
-      if (dd) {
-        const id = dd.dataset.target;
-        if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
-          window.__SUB_DEMO.requestHeal(id);
-          return true;
+  // tutorial steps
+  const steps = [
+    {
+      id: 'assign',
+      title: 'Assign a Crew Member',
+      text: `Assign a crew member to a repair: open the "Assign" select on a task and choose a crew. Use Quick to auto-assign the healthiest available crew.`,
+      selector: '[data-action="assign"]',
+      position: 'right',
+      onEnter: async function(api){
+        // nothing
+      },
+      validate: () => {
+        // true when any task has an assigned crew
+        const sel = document.querySelectorAll('[data-action="assign"]');
+        for (const s of sel){
+          if (s.value && s.value !== '') return true;
         }
+        return false;
+      },
+      autoAction: async function(api){
+        // prefer to hit the "Quick" button on first task
+        const quick = document.querySelector('[data-action="fastAssign"]');
+        if (quick) { quick.click(); return true; }
+        // else try to programmatically assign: pick first available crew & first task
+        const dd = document.querySelector('[data-action="assign"]');
+        if (!dd) return false;
+        const crewOption = dd.querySelector('option[value]') || dd.options[1];
+        if (!crewOption) return false;
+        dd.value = dd.querySelector('option[value]') ? dd.querySelector('option[value]').value : dd.options[1].value;
+        dd.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
       }
-      return false;
+    },
+    {
+      id: 'upgrades',
+      title: 'Open Upgrades Panel',
+      text: `You can buy upgrades for each crew member. Click Upgrades on a crew card to open the panel and purchase levels with supplies.`,
+      selector: '[data-action="openUpgrades"]',
+      position: 'right',
+      validate: () => {
+        const panel = document.getElementById('upgradePanel');
+        return !!(panel && panel.dataset && panel.dataset.openCrew);
+      },
+      autoAction: async function(api){
+        // click the first Upgrades button for an alive crew
+        const btn = document.querySelector('[data-action="openUpgrades"]');
+        if (btn) { btn.click(); return true; }
+        return false;
+      }
+    },
+    {
+      id: 'medic',
+      title: 'Use Medic — Request Heal',
+      text: `Request a Medic to heal a wounded crew member. Click Heal on a crew card to have the Medic start healing.`,
+      selector: '[data-action="requestHeal"]',
+      position: 'left',
+      validate: () => {
+        const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
+        if (!medic) return false;
+        return !!(medic.repairing && medic.repairing.startsWith('healing:'));
+      },
+      autoAction: async function(api){
+        const btn = document.querySelector('[data-action="requestHeal"]');
+        if (btn) { btn.click(); return true; }
+        const dd = document.querySelector('[data-action="requestHeal"][data-target]');
+        if (dd) {
+          const id = dd.dataset.target;
+          if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
+            window.__SUB_DEMO.requestHeal(id);
+            return true;
+          }
+        }
+        return false;
+      }
+    },
+    {
+      id: 'wrap-up',
+      title: 'Wrap Up',
+      text: `That's the quick tour! You can replay this tutorial anytime. Press Finish to close the tutorial.`,
+      selector: null,
+      position: 'center',
+      nextText: 'Finish',
+      validate: () => true
     }
-  },
-  {
-    id: 'wrap-up',
-    title: 'Wrap Up',
-    text: `That's the quick tour! You can replay this tutorial anytime. Press Finish to close the tutorial.`,
-    selector: null,
-    position: 'center',
-    nextText: 'Finish',
-    validate: () => true
-  }
-];
+  ];
 
 
   // Tutorial state
@@ -177,7 +177,14 @@ const steps = [
     overlayEl.appendChild(arrowEl);
 
     // attach control events
-    popupEl.querySelector('#tutorial-next').onclick = ()=> goto(currentStep + 1);
+    popupEl.querySelector('#tutorial-next').onclick = ()=> {
+      // new behavior: if we're on the final step, Next acts as Finish (close)
+      if (currentStep >= steps.length - 1) {
+        stop();
+      } else {
+        goto(currentStep + 1);
+      }
+    };
     popupEl.querySelector('#tutorial-prev').onclick = ()=> goto(currentStep - 1);
     popupEl.querySelector('#tutorial-exit').onclick = ()=> stop();
     popupEl.querySelector('#tutorial-auto').onclick = async ()=> {
@@ -234,124 +241,124 @@ const steps = [
     highlightEl = null;
   }
 
-function placePopupNear(target, position = 'right') {
-  if (!popupEl) return;
+  function placePopupNear(target, position = 'right') {
+    if (!popupEl) return;
 
-  // ensure popup is measurable and not influenced by previous left/top
-  popupEl.style.visibility = 'hidden';
-  popupEl.style.left = '0px';
-  popupEl.style.top = '0px';
-  // force layout so offsetWidth/Height are correct
-  const pW = popupEl.offsetWidth;
-  const pH = popupEl.offsetHeight;
-  popupEl.style.visibility = '';
+    // ensure popup is measurable and not influenced by previous left/top
+    popupEl.style.visibility = 'hidden';
+    popupEl.style.left = '0px';
+    popupEl.style.top = '0px';
+    // force layout so offsetWidth/Height are correct
+    const pW = popupEl.offsetWidth;
+    const pH = popupEl.offsetHeight;
+    popupEl.style.visibility = '';
 
-  const pad = 12;
+    const pad = 12;
 
-  // no target -> center
-  if (!target) {
-    popupEl.style.left = Math.max(12, (window.innerWidth / 2) - (pW / 2)) + 'px';
-    popupEl.style.top  = Math.max(12, (window.innerHeight / 2) - (pH / 2)) + 'px';
-    arrowEl.style.display = 'none';
-    return;
+    // no target -> center
+    if (!target) {
+      popupEl.style.left = Math.max(12, (window.innerWidth / 2) - (pW / 2)) + 'px';
+      popupEl.style.top  = Math.max(12, (window.innerHeight / 2) - (pH / 2)) + 'px';
+      arrowEl.style.display = 'none';
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const space = {
+      left: rect.left,
+      right: window.innerWidth - rect.right,
+      top: rect.top,
+      bottom: window.innerHeight - rect.bottom
+    };
+
+    // choose position, but fall back if not enough space
+    let usedPos = position;
+    if (position === 'left' && space.left < (pW + pad)) {
+      if (space.right >= (pW + pad)) usedPos = 'right';
+      else if (space.top >= (pH + pad)) usedPos = 'top';
+      else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+      else usedPos = 'center';
+    } else if (position === 'right' && space.right < (pW + pad)) {
+      if (space.left >= (pW + pad)) usedPos = 'left';
+      else if (space.top >= (pH + pad)) usedPos = 'top';
+      else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+      else usedPos = 'center';
+    } else if (position === 'top' && space.top < (pH + pad)) {
+      if (space.bottom >= (pH + pad)) usedPos = 'bottom';
+      else if (space.right >= (pW + pad)) usedPos = 'right';
+      else if (space.left >= (pW + pad)) usedPos = 'left';
+      else usedPos = 'center';
+    } else if (position === 'bottom' && space.bottom < (pH + pad)) {
+      if (space.top >= (pH + pad)) usedPos = 'top';
+      else if (space.right >= (pW + pad)) usedPos = 'right';
+      else if (space.left >= (pW + pad)) usedPos = 'left';
+      else usedPos = 'center';
+    }
+
+    let left = 20, top = 20;
+    switch (usedPos) {
+      case 'right':
+        left = Math.min(window.innerWidth - pW - 12, rect.right + pad);
+        top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
+        break;
+      case 'left':
+        left = Math.max(12, rect.left - pW - pad);
+        top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
+        break;
+      case 'bottom':
+        left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
+        top = Math.min(window.innerHeight - pH - 12, rect.bottom + pad);
+        break;
+      case 'top':
+        left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
+        top = Math.max(12, rect.top - pH - pad);
+        break;
+      case 'center':
+      default:
+        left = Math.max(12, (window.innerWidth / 2) - (pW / 2));
+        top = Math.max(12, (window.innerHeight / 2) - (pH / 2));
+        break;
+    }
+
+    popupEl.style.left = left + 'px';
+    popupEl.style.top  = top  + 'px';
+
+    // arrow: show/hide + position it near the popup and target
+    if (!arrowEl) return;
+    if (usedPos === 'center') {
+      arrowEl.style.display = 'none';
+      return;
+    }
+    arrowEl.style.display = 'block';
+
+    const px = popupEl.getBoundingClientRect();
+    const tx = rect;
+
+    let arrowLeft = px.left;
+    let arrowTop  = px.top;
+
+    switch (usedPos) {
+      case 'right':
+        arrowLeft = px.left - 9;
+        arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
+        break;
+      case 'left':
+        arrowLeft = px.right - 9;
+        arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
+        break;
+      case 'top':
+        arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
+        arrowTop  = px.bottom - 9;
+        break;
+      case 'bottom':
+        arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
+        arrowTop  = px.top - 9;
+        break;
+    }
+
+    arrowEl.style.left = arrowLeft + 'px';
+    arrowEl.style.top  = arrowTop  + 'px';
   }
-
-  const rect = target.getBoundingClientRect();
-  const space = {
-    left: rect.left,
-    right: window.innerWidth - rect.right,
-    top: rect.top,
-    bottom: window.innerHeight - rect.bottom
-  };
-
-  // choose position, but fall back if not enough space
-  let usedPos = position;
-  if (position === 'left' && space.left < (pW + pad)) {
-    if (space.right >= (pW + pad)) usedPos = 'right';
-    else if (space.top >= (pH + pad)) usedPos = 'top';
-    else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
-    else usedPos = 'center';
-  } else if (position === 'right' && space.right < (pW + pad)) {
-    if (space.left >= (pW + pad)) usedPos = 'left';
-    else if (space.top >= (pH + pad)) usedPos = 'top';
-    else if (space.bottom >= (pH + pad)) usedPos = 'bottom';
-    else usedPos = 'center';
-  } else if (position === 'top' && space.top < (pH + pad)) {
-    if (space.bottom >= (pH + pad)) usedPos = 'bottom';
-    else if (space.right >= (pW + pad)) usedPos = 'right';
-    else if (space.left >= (pW + pad)) usedPos = 'left';
-    else usedPos = 'center';
-  } else if (position === 'bottom' && space.bottom < (pH + pad)) {
-    if (space.top >= (pH + pad)) usedPos = 'top';
-    else if (space.right >= (pW + pad)) usedPos = 'right';
-    else if (space.left >= (pW + pad)) usedPos = 'left';
-    else usedPos = 'center';
-  }
-
-  let left = 20, top = 20;
-  switch (usedPos) {
-    case 'right':
-      left = Math.min(window.innerWidth - pW - 12, rect.right + pad);
-      top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
-      break;
-    case 'left':
-      left = Math.max(12, rect.left - pW - pad);
-      top = Math.max(12, rect.top + (rect.height / 2) - (pH / 2));
-      break;
-    case 'bottom':
-      left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
-      top = Math.min(window.innerHeight - pH - 12, rect.bottom + pad);
-      break;
-    case 'top':
-      left = Math.max(12, rect.left + (rect.width / 2) - (pW / 2));
-      top = Math.max(12, rect.top - pH - pad);
-      break;
-    case 'center':
-    default:
-      left = Math.max(12, (window.innerWidth / 2) - (pW / 2));
-      top = Math.max(12, (window.innerHeight / 2) - (pH / 2));
-      break;
-  }
-
-  popupEl.style.left = left + 'px';
-  popupEl.style.top  = top  + 'px';
-
-  // arrow: show/hide + position it near the popup and target
-  if (!arrowEl) return;
-  if (usedPos === 'center') {
-    arrowEl.style.display = 'none';
-    return;
-  }
-  arrowEl.style.display = 'block';
-
-  const px = popupEl.getBoundingClientRect();
-  const tx = rect;
-
-  let arrowLeft = px.left;
-  let arrowTop  = px.top;
-
-  switch (usedPos) {
-    case 'right':
-      arrowLeft = px.left - 9;
-      arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
-      break;
-    case 'left':
-      arrowLeft = px.right - 9;
-      arrowTop  = Math.min(window.innerHeight - 18, Math.max(8, tx.top + tx.height / 2 - 9));
-      break;
-    case 'top':
-      arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
-      arrowTop  = px.bottom - 9;
-      break;
-    case 'bottom':
-      arrowLeft = Math.min(window.innerWidth - 18, Math.max(8, tx.left + tx.width / 2 - 9));
-      arrowTop  = px.top - 9;
-      break;
-  }
-
-  arrowEl.style.left = arrowLeft + 'px';
-  arrowEl.style.top  = arrowTop  + 'px';
-}
 
   function renderStep() {
       if (!overlayEl) createOverlay();
@@ -395,7 +402,10 @@ function placePopupNear(target, position = 'right') {
       const autoBtn = popupEl.querySelector('#tutorial-auto');
 
       prevBtn.disabled = (currentStep <= 0);
-      nextBtn.disabled = (currentStep >= steps.length - 1);
+
+      // NEW: Allow Next on final step to act as Finish (not disabled).
+      const isLast = (currentStep >= steps.length - 1);
+      nextBtn.disabled = isLast ? false : true; // non-last steps start disabled until validate runs
 
       // **Hide Back button if disabled**
       prevBtn.style.display = prevBtn.disabled ? 'none' : 'inline-block';
@@ -411,12 +421,18 @@ function placePopupNear(target, position = 'right') {
     const step = steps[currentStep];
     if (!step) return;
     // if validate returns true, enable Next; optionally auto-advance if done
+    // NEW: never disable the Next button on the final step (it should finish)
+    const isLast = (currentStep >= steps.length - 1);
+    if (isLast) {
+      popupEl.querySelector('#tutorial-next').disabled = false;
+      return;
+    }
+
     if (step.validate && typeof step.validate === 'function') {
       try {
         const ok = await step.validate();
         // if ok and we're not last step, enable next. We don't auto-forward by default except for some flows.
         if (ok) {
-          // show a hint
           // automatically enable "Next" button
           popupEl.querySelector('#tutorial-next').disabled = false;
         } else {
@@ -424,6 +440,9 @@ function placePopupNear(target, position = 'right') {
           popupEl.querySelector('#tutorial-next').disabled = true;
         }
       } catch(e){ console.warn('validate error', e); }
+    } else {
+      // no validate function — enable Next (unless last, which is already handled)
+      popupEl.querySelector('#tutorial-next').disabled = false;
     }
   }
 

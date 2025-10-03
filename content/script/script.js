@@ -736,7 +736,6 @@ function renderTasks(){
                 ? ` • Extinguisher: <strong>${extingName === '—' ? 'None' : extingName}</strong>`
                 : ''}
               • Damage/sec: ${(t.baseDamagePerSec * (t.eventDamageMult || 1)).toFixed(2)}
-              ${eventBadges ? '• ' + eventBadges : ''}
             </div>
     </div>
       <div class="actions">

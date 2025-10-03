@@ -14,9 +14,10 @@
   "difficulty_easy": "イージー — イベント少なめ、ダメージ軽め",
   "difficulty_hard": "ハード — イベント多め、ダメージ大きめ",
   "difficulty_nightmare": "ナイトメア — 容赦ない危険",
-  "difficulty_desc": "",
   "btn_reset_upgrades": "アップグレードをリセット",
   "btn_start": "開始",
+  "btn_credits": "クレジット",
+  "btn_back": "戻る",
   "end_title": "浮上成功 — 勝利",
   "end_sub": "プレイしていただきありがとうございます。",
   "btn_restart": "再スタート",
@@ -31,5 +32,6 @@
   "active_events": "進行中のイベント:",
   "panel_upgrades": "アップグレード",
   "upgrades_instruction": "乗組員のカードからアップグレードパネルを開きます",
-  "upgrade_panel_placeholder": "乗組員を選択してアップグレードを表示/購入してください。"
+  "upgrade_panel_placeholder": "乗組員を選択してアップグレードを表示/購入してください。",
+  "credits_title": "クレジット一覧"
 }

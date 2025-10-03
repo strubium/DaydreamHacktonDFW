@@ -14,9 +14,10 @@
   "difficulty_easy": "Fácil — menos eventos, menor daño",
   "difficulty_hard": "Difícil — más eventos, mayor daño",
   "difficulty_nightmare": "Pesadilla — peligro implacable",
-  "difficulty_desc": "",
   "btn_reset_upgrades": "Reiniciar Mejoras",
   "btn_start": "Iniciar",
+  "btn_credits": "Créditos",
+  "btn_back": "Volver",
   "end_title": "HAS AFORADO — VICTORIA",
   "end_sub": "Gracias por jugar el juego.",
   "btn_restart": "Reiniciar",
@@ -31,5 +32,6 @@
   "active_events": "Eventos activos:",
   "panel_upgrades": "Mejoras",
   "upgrades_instruction": "Abre el panel de mejoras de un miembro de la tripulación desde su tarjeta",
-  "upgrade_panel_placeholder": "Selecciona una tripulación para ver/comprar mejoras."
+  "upgrade_panel_placeholder": "Selecciona una tripulación para ver/comprar mejoras.",
+  "credits_title": "Los Créditos"
 }

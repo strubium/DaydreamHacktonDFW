@@ -14,9 +14,10 @@
   "difficulty_easy": "Easy — fewer events, lower damage",
   "difficulty_hard": "Hard — more events, higher damage",
   "difficulty_nightmare": "Nightmare — relentless danger",
-  "difficulty_desc": "",
   "btn_reset_upgrades": "Reset Upgrades",
   "btn_start": "Start",
+  "btn_credits": "Credits",
+  "btn_back": "Back",
   "end_title": "YOU SURFACED — VICTORY",
   "end_sub": "Thanks for playing the game.",
   "btn_restart": "Restart",
@@ -31,5 +32,6 @@
   "active_events": "Active events:",
   "panel_upgrades": "Upgrades",
   "upgrades_instruction": "Open a crew's upgrade panel from their card",
-  "upgrade_panel_placeholder": "Select a crew to view/purchase upgrades."
+  "upgrade_panel_placeholder": "Select a crew to view/purchase upgrades.",
+  "credits_title": "The Credits"
 }

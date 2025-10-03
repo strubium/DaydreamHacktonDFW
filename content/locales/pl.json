@@ -14,9 +14,10 @@
   "difficulty_easy": "Łatwy — mniej zdarzeń, mniejsze obrażenia",
   "difficulty_hard": "Trudny — więcej zdarzeń, większe obrażenia",
   "difficulty_nightmare": "Koszmar — bezlitosne zagrożenie",
-  "difficulty_desc": "",
   "btn_reset_upgrades": "Resetuj ulepszenia",
   "btn_start": "Start",
+  "btn_credits": "Twórcy",
+  "btn_back": "Wróć",
   "end_title": "WYNURZENIE — ZWYCIĘSTWO",
   "end_sub": "Dzięki za grę.",
   "btn_restart": "Restart",
@@ -31,5 +32,6 @@
   "active_events": "Aktywne zdarzenia:",
   "panel_upgrades": "Ulepszenia",
   "upgrades_instruction": "Otwórz panel ulepszeń załogi z ich karty",
-  "upgrade_panel_placeholder": "Wybierz załogę, aby zobaczyć/kupić ulepszenia."
+  "upgrade_panel_placeholder": "Wybierz załogę, aby zobaczyć/kupić ulepszenia.",
+  "credits_title": "Twórcy"
 }

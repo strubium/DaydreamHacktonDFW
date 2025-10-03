@@ -10,8 +10,27 @@
 </head>
 <body>
 
+<!-- Credits Overlay (drawn on top of main menu) -->
+<div id="credits-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="credits-title">
+    <div class="modal" role="document" aria-live="polite">
+        <button id="btn-credits-exit" class="close-btn" aria-label="Close credits">×</button>
+        <h1 id="credits-title" data-i18n="credits_title">Credits</h1>
+        <ul>
+            <li><strong>Code:</strong> Hudson Strub</li>
+            <li><strong>Music:</strong> Anthony Hernandez</li>
+            <li><strong>Resident Submarine Guy:</strong> Mark Bjurstrom</li>
+            <li><strong>Polish Localization:</strong> <a href="https://github.com/Paneedah">Paneedah</a></li>
+            <li><strong>Special Thanks:</strong> Abby, Alan</li>
+        </ul>
+
+        <div class="back-row">
+            <button id="btn-credits-back" data-i18n="btn_back">Back</button>
+        </div>
+    </div>
+</div>
+
 <!-- === Main Menu === -->
-<div class="main-menu">
+<div class="main-menu" role="menu" aria-label="Main menu">
     <h1 data-i18n="welcome_title">Surface & Repair</h1>
     <p class="small-muted" data-i18n="welcome_text_1">You're in command of a stranded sub. Prepare your crew and surface safely.</p>
 
@@ -27,6 +46,7 @@
 
     <button id="btn-start" data-i18n="btn_start">Start</button>
     <button id="btn-tutorial" class="btn-small" data-i18n="btn_tutorial">Tutorial</button>
+    <button id="btn-credits" class="btn-small" data-i18n="btn_credits">Credits</button>
     <button id="btn-reset-upgrades" class="btn-small" data-i18n="btn_reset_upgrades">Reset Upgrades</button>
 </div>
 
@@ -99,32 +119,75 @@
     <div id="immersive-toasts" aria-live="polite" aria-atomic="false"></div>
 </div>
 
+<!-- External game scripts (unchanged) -->
 <script src="content/script/lang.js"></script>
 <script src="content/script/popups.js"></script>
 <script src="content/script/script.js"></script>
 <script src="content/script/tutorial.js"></script>
 <script src="content/script/music.js"></script>
+
+<!-- Main inline initialization / credits handling -->
 <script>
     (function(){
         const startBtn = document.getElementById('btn-start');
         const tutorialBtn = document.getElementById('btn-tutorial');
         const resetBtn = document.getElementById('btn-reset-upgrades');
+        const creditsBtn = document.getElementById('btn-credits');
+        const creditsOverlay = document.getElementById('credits-overlay');
+        const creditsBackBtn = document.getElementById('btn-credits-back');
+        const creditsExitBtn = document.getElementById('btn-credits-exit');
+
         const menu = document.querySelector('.main-menu');
         const app = document.querySelector('.app');
 
-        startBtn.addEventListener('click', () => {
+        startBtn && startBtn.addEventListener('click', () => {
             menu.style.display = 'none';
             app.classList.remove('hidden');
         });
 
-        tutorialBtn.addEventListener('click', () => {
+        tutorialBtn && tutorialBtn.addEventListener('click', () => {
             menu.style.display = 'none';
             app.classList.remove('hidden');
             if(window.SubDemoTutorial?.start) window.SubDemoTutorial.start();
         });
 
-        resetBtn.addEventListener('click', () => {
+        resetBtn && resetBtn.addEventListener('click', () => {
             if(window.resetUpgrades) window.resetUpgrades();
+        });
+
+        // Open credits
+        creditsBtn && creditsBtn.addEventListener('click', () => {
+            if (!creditsOverlay) return;
+            creditsOverlay.style.display = 'flex';
+            creditsOverlay.setAttribute('aria-hidden', 'false');
+            // trap focus to overlay for a11y
+            const firstFocusable = creditsOverlay.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (firstFocusable) firstFocusable.focus();
+        });
+
+        // Close credits helper
+        function closeCredits() {
+            if (!creditsOverlay) return;
+            creditsOverlay.style.display = 'none';
+            creditsOverlay.setAttribute('aria-hidden', 'true');
+            // return focus back to the credits button
+            creditsBtn && creditsBtn.focus();
+        }
+
+        creditsBackBtn && creditsBackBtn.addEventListener('click', closeCredits);
+        creditsExitBtn && creditsExitBtn.addEventListener('click', closeCredits);
+
+        // Close when clicking on backdrop (outside modal)
+        creditsOverlay && creditsOverlay.addEventListener('click', (e) => {
+            // if click is directly on overlay (not inside modal), close
+            if (e.target === creditsOverlay) closeCredits();
+        });
+
+        // Close on Escape key when overlay is open
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && creditsOverlay && creditsOverlay.style.display === 'flex') {
+                closeCredits();
+            }
         });
     })();
 </script>

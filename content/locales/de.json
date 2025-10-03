@@ -14,9 +14,10 @@
   "difficulty_easy": "Einfach — weniger Ereignisse, weniger Schaden",
   "difficulty_hard": "Schwer — mehr Ereignisse, mehr Schaden",
   "difficulty_nightmare": "Albtraum — unerbittliche Gefahr",
-  "difficulty_desc": "",
   "btn_reset_upgrades": "Upgrades zurücksetzen",
   "btn_start": "Start",
+  "btn_credits": "Credits",
+  "btn_back": "Zurück",
   "end_title": "DU BIST AUFGETAUCHT — SIEG",
   "end_sub": "Danke fürs Spielen.",
   "btn_restart": "Neustart",
@@ -31,5 +32,6 @@
   "active_events": "Aktive Ereignisse:",
   "panel_upgrades": "Upgrades",
   "upgrades_instruction": "Öffne das Upgrade-Panel einer Crew über ihre Karte",
-  "upgrade_panel_placeholder": "Wähle eine Crew aus, um Upgrades anzusehen/zu kaufen."
+  "upgrade_panel_placeholder": "Wähle eine Crew aus, um Upgrades anzusehen/zu kaufen.",
+  "credits_title": "Die Credits"
 }

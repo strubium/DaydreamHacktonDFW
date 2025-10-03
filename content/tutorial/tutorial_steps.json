@@ -1,9 +1,37 @@
 [
   {
+    "id": "tasks1",
+    "title": "Welcome",
+    "text": "You're in command of a stranded sub. The crew must gather and repair critical systems so you can surface",
+    "selector": "center-stage",
+    "position": "right"
+  },
+  {
+    "id": "tasks2",
+    "title": "The Crew",
+    "text": "Here is your crew",
+    "selector": ".crew-list",
+    "position": "right"
+  },
+  {
+    "id": "tasks2",
+    "title": "The Crew",
+    "text": "Each crew member has a health bar, and stats that effect how they work",
+    "selector": ".name",
+    "position": "right"
+  },
+  {
     "id": "assign",
     "title": "Assign a Crew Member",
-    "text": "Assign a crew member to a repair: open the \"Assign\" select on a task and choose a crew. Use Quick to auto-assign the healthiest available crew.",
+    "text": "Assign a crew member to a repair a task: open the \"Assign\" select on a task and choose a crew.",
     "selector": "[data-action=\"assign\"]",
+    "position": "right"
+  },
+  {
+    "id": "assign",
+    "title": "Assign a Crew Member",
+    "text": "Use Quick to auto-assign the healthiest available crew.",
+    "selector": "[data-action=\"fastAssign\"]",
     "position": "right"
   },
   {

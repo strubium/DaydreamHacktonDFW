@@ -807,7 +807,7 @@ function renderTasks(){
     tasksContainer.appendChild(taskEl);
   });
 
-  // attach listeners (same as before)
+  // attach listeners
   tasksContainer.querySelectorAll('[data-action="assign"]').forEach(sel=>{
     sel.onchange = ()=> {
       const taskId = sel.dataset.id;

@@ -27,76 +27,74 @@
     });
   }
 
-    let steps = [];
+  let steps = [];
 
-    async function loadSteps() {
-      try {
-        const res = await fetch('content/tutorial/tutorial_steps.json');
-        const data = await res.json();
-        steps = data.map(step => {
-          // attach function hooks for specific steps
-          if (step.id === 'assign') {
-            step.validate = () => {
-              const sel = document.querySelectorAll('[data-action="assign"]');
-              for (const s of sel){
-                if (s.value && s.value !== '') return true;
+  async function loadSteps() {
+    try {
+      const res = await fetch('content/tutorial/tutorial_steps.json');
+      const data = await res.json();
+      steps = data.map(step => {
+        // attach function hooks for specific steps
+        if (step.id === 'assign') {
+          step.validate = () => {
+            const sel = document.querySelectorAll('[data-action="assign"]');
+            for (const s of sel){
+              if (s.value && s.value !== '') return true;
+            }
+            return false;
+          };
+          step.autoAction = async function() {
+            const quick = document.querySelector('[data-action="fastAssign"]');
+            if (quick) { quick.click(); return true; }
+            const dd = document.querySelector('[data-action="assign"]');
+            if (!dd) return false;
+            const crewOption = dd.querySelector('option[value]') || dd.options[1];
+            if (!crewOption) return false;
+            dd.value = crewOption.value;
+            dd.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+          };
+        }
+        if (step.id === 'upgrades') {
+          step.validate = () => {
+            const panel = document.getElementById('upgradePanel');
+            return !!(panel && panel.dataset && panel.dataset.openCrew);
+          };
+          step.autoAction = async function() {
+            const btn = document.querySelector('[data-action="openUpgrades"]');
+            if (btn) { btn.click(); return true; }
+            return false;
+          };
+        }
+        if (step.id === 'medic') {
+          step.validate = () => {
+            const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
+            if (!medic) return false;
+            return !!(medic.repairing && medic.repairing.startsWith('healing:'));
+          };
+          step.autoAction = async function() {
+            const btn = document.querySelector('[data-action="requestHeal"]');
+            if (btn) { btn.click(); return true; }
+            const dd = document.querySelector('[data-action="requestHeal"][data-target]');
+            if (dd) {
+              const id = dd.dataset.target;
+              if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
+                window.__SUB_DEMO.requestHeal(id);
+                return true;
               }
-              return false;
-            };
-            step.autoAction = async function() {
-              const quick = document.querySelector('[data-action="fastAssign"]');
-              if (quick) { quick.click(); return true; }
-              const dd = document.querySelector('[data-action="assign"]');
-              if (!dd) return false;
-              const crewOption = dd.querySelector('option[value]') || dd.options[1];
-              if (!crewOption) return false;
-              dd.value = crewOption.value;
-              dd.dispatchEvent(new Event('change', { bubbles: true }));
-              return true;
-            };
-          }
-          if (step.id === 'upgrades') {
-            step.validate = () => {
-              const panel = document.getElementById('upgradePanel');
-              return !!(panel && panel.dataset && panel.dataset.openCrew);
-            };
-            step.autoAction = async function() {
-              const btn = document.querySelector('[data-action="openUpgrades"]');
-              if (btn) { btn.click(); return true; }
-              return false;
-            };
-          }
-          if (step.id === 'medic') {
-            step.validate = () => {
-              const medic = (window.__SUB_DEMO && window.__SUB_DEMO.crew) ? window.__SUB_DEMO.crew.find(c=>c.role==='Medic') : null;
-              if (!medic) return false;
-              return !!(medic.repairing && medic.repairing.startsWith('healing:'));
-            };
-            step.autoAction = async function() {
-              const btn = document.querySelector('[data-action="requestHeal"]');
-              if (btn) { btn.click(); return true; }
-              const dd = document.querySelector('[data-action="requestHeal"][data-target]');
-              if (dd) {
-                const id = dd.dataset.target;
-                if (window.__SUB_DEMO && typeof window.__SUB_DEMO.requestHeal === 'function') {
-                  window.__SUB_DEMO.requestHeal(id);
-                  return true;
-                }
-              }
-              return false;
-            };
-          }
-          if (step.id === 'wrap-up') {
-            step.validate = () => true;
-          }
-          return step;
-        });
-      } catch (err) {
-        console.error('Failed to load tutorial steps', err);
-      }
+            }
+            return false;
+          };
+        }
+        if (step.id === 'wrap-up') {
+          step.validate = () => true;
+        }
+        return step;
+      });
+    } catch (err) {
+      console.error('Failed to load tutorial steps', err);
     }
-
-
+  }
 
   // Tutorial state
   let currentStep = 0;
@@ -105,12 +103,10 @@
   let highlightEl = null;
   let arrowEl = null;
   let running = false;
-  let stepTimeout = null;
 
   function createOverlay() {
     overlayEl = document.createElement('div');
     overlayEl.className = 'tutorial-overlay';
-    // ensure overlay covers viewport so getBoundingClientRect coords match
     Object.assign(overlayEl.style, {
       position: 'fixed',
       left: '0',
@@ -118,7 +114,7 @@
       width: '100%',
       height: '100%',
       zIndex: 99999,
-      pointerEvents: 'none' // allow clicks to pass through except popup (we'll enable popup)
+      pointerEvents: 'none'
     });
 
     overlayEl.innerHTML = `
@@ -127,7 +123,6 @@
     `;
     document.body.appendChild(overlayEl);
 
-    // popup holder
     const root = document.getElementById('tutorial-popup-root');
 
     popupEl = document.createElement('div');
@@ -135,7 +130,7 @@
     popupEl.style.position = 'absolute';
     popupEl.style.left = '16px';
     popupEl.style.top = '16px';
-    popupEl.style.pointerEvents = 'auto'; // allow interacting with popup controls
+    popupEl.style.pointerEvents = 'auto';
     popupEl.innerHTML = `
       <h3 id="tutorial-title">Title</h3>
       <p id="tutorial-text">Text</p>
@@ -148,7 +143,7 @@
     `;
     root.appendChild(popupEl);
 
-    // arrow for connecting popup to highlight
+    // arrow
     arrowEl = document.createElement('div');
     arrowEl.className = 'tutorial-arrow';
     Object.assign(arrowEl.style, {
@@ -156,28 +151,41 @@
       width: '18px',
       height: '18px',
       display: 'none',
-      pointerEvents: 'none' // arrow should not block clicks
+      pointerEvents: 'none'
     });
     overlayEl.appendChild(arrowEl);
 
-    // attach control events
-    popupEl.querySelector('#tutorial-next').onclick = ()=> {
-      // new behavior: if we're on the final step, Next acts as Finish (close)
-      if (currentStep >= steps.length - 1) {
-        stop();
-      } else {
-        goto(currentStep + 1);
-      }
+    // attach controls
+    const prevBtn = popupEl.querySelector('#tutorial-prev');
+    const nextBtn = popupEl.querySelector('#tutorial-next');
+    const autoBtn = popupEl.querySelector('#tutorial-auto');
+    const exitBtn = popupEl.querySelector('#tutorial-exit');
+
+    // add fade-in CSS for auto button
+    autoBtn.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    autoBtn.style.opacity = '1';
+    autoBtn.style.transform = 'scale(1)';
+
+    nextBtn.onclick = () => {
+      if (currentStep >= steps.length - 1) stop();
+      else goto(currentStep + 1);
     };
-    popupEl.querySelector('#tutorial-prev').onclick = ()=> goto(currentStep - 1);
-    popupEl.querySelector('#tutorial-exit').onclick = ()=> stop();
-    popupEl.querySelector('#tutorial-auto').onclick = async ()=> {
+    prevBtn.onclick = () => goto(currentStep - 1);
+    exitBtn.onclick = () => stop();
+
+    autoBtn.onclick = async () => {
       const step = steps[currentStep];
-      if (step && typeof step.autoAction === 'function'){
+      if (step && typeof step.autoAction === 'function') {
         try {
           await step.autoAction();
-          setTimeout(()=> { tryAdvanceIfValid(); }, 450);
-        } catch(e){ console.warn('Auto action failed', e); }
+
+          // fade out
+          autoBtn.style.opacity = '0';
+          autoBtn.style.transform = 'scale(0.8)';
+          setTimeout(() => { autoBtn.style.display = 'none'; }, 400);
+
+          setTimeout(() => { tryAdvanceIfValid(); }, 450);
+        } catch(e) { console.warn('Auto action failed', e); }
       } else {
         showTempMessage('No automatic action available for this step');
       }
@@ -214,9 +222,7 @@
     if (!el) return;
     highlightEl = el;
     el.classList.add('tutorial-highlight');
-    // scroll into view (center)
     try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
-    // position popup near element
   }
 
   function clearHighlight() {
@@ -228,18 +234,15 @@
   function placePopupNear(target, position = 'right') {
     if (!popupEl) return;
 
-    // ensure popup is measurable and not influenced by previous left/top
     popupEl.style.visibility = 'hidden';
     popupEl.style.left = '0px';
     popupEl.style.top = '0px';
-    // force layout so offsetWidth/Height are correct
     const pW = popupEl.offsetWidth;
     const pH = popupEl.offsetHeight;
     popupEl.style.visibility = '';
 
     const pad = 12;
 
-    // no target -> center
     if (!target) {
       popupEl.style.left = Math.max(12, (window.innerWidth / 2) - (pW / 2)) + 'px';
       popupEl.style.top  = Math.max(12, (window.innerHeight / 2) - (pH / 2)) + 'px';
@@ -248,15 +251,9 @@
     }
 
     const rect = target.getBoundingClientRect();
-    const space = {
-      left: rect.left,
-      right: window.innerWidth - rect.right,
-      top: rect.top,
-      bottom: window.innerHeight - rect.bottom
-    };
-
-    // choose position, but fall back if not enough space
+    const space = { left: rect.left, right: window.innerWidth - rect.right, top: rect.top, bottom: window.innerHeight - rect.bottom };
     let usedPos = position;
+
     if (position === 'left' && space.left < (pW + pad)) {
       if (space.right >= (pW + pad)) usedPos = 'right';
       else if (space.top >= (pH + pad)) usedPos = 'top';
@@ -307,17 +304,12 @@
     popupEl.style.left = left + 'px';
     popupEl.style.top  = top  + 'px';
 
-    // arrow: show/hide + position it near the popup and target
     if (!arrowEl) return;
-    if (usedPos === 'center') {
-      arrowEl.style.display = 'none';
-      return;
-    }
-    arrowEl.style.display = 'block';
+    if (usedPos === 'center') { arrowEl.style.display = 'none'; return; }
 
+    arrowEl.style.display = 'block';
     const px = popupEl.getBoundingClientRect();
     const tx = rect;
-
     let arrowLeft = px.left;
     let arrowTop  = px.top;
 
@@ -356,14 +348,14 @@
       // find element if selector provided (first match)
       let target = null;
       if (step.selector) {
-        target = document.querySelector(step.selector);
-        if (!target) {
-          waitFor(step.selector, 4500).then(el => {
-            if (currentStep === steps.findIndex(s=>s.id===step.id)) {
-              renderStep();
-            }
-          }).catch(()=>{ /* no-op */ });
-        }
+          target = document.querySelector(step.selector);
+          if (!target) {
+              waitFor(step.selector, 4500).then(el => {
+                  if (currentStep === steps.findIndex(s => s.id === step.id)) {
+                      renderStep();
+                  }
+              }).catch(() => { /* no-op */ });
+          }
       }
 
       // highlight element if found
@@ -375,37 +367,43 @@
 
       // call onEnter if present
       if (step.onEnter && typeof step.onEnter === 'function') {
-        try { step.onEnter(); } catch(e){ console.warn('tutorial onEnter error', e); }
+          try { step.onEnter(); } catch(e){ console.warn('tutorial onEnter error', e); }
       }
 
       // update prev/next button state
       const prevBtn = popupEl.querySelector('#tutorial-prev');
       const nextBtn = popupEl.querySelector('#tutorial-next');
       nextBtn.textContent = step.nextText || 'Next'; // dynamic label
-
       const autoBtn = popupEl.querySelector('#tutorial-auto');
 
       prevBtn.disabled = (currentStep <= 0);
 
-      // NEW: Allow Next on final step to act as Finish (not disabled).
+      // Hide Back button if disabled
+      prevBtn.style.display = prevBtn.disabled ? 'none' : 'inline-block';
+
+      // Show or hide "Do it for me" instantly based on autoAction
+      if (step.autoAction && typeof step.autoAction === 'function') {
+          autoBtn.style.display = 'inline-block';
+          autoBtn.style.opacity = '1';
+          autoBtn.style.transform = 'scale(1)';
+      } else {
+          autoBtn.style.display = 'none';
+          autoBtn.style.opacity = '0';
+          autoBtn.style.transform = 'scale(0.8)';
+      }
+
+      // NEW: Allow Next on final step to act as Finish
       const isLast = (currentStep >= steps.length - 1);
       nextBtn.disabled = isLast ? false : true; // non-last steps start disabled until validate runs
 
-      // **Hide Back button if disabled**
-      prevBtn.style.display = prevBtn.disabled ? 'none' : 'inline-block';
-
-      // **Hide "Do it for me" if no autoAction exists**
-      autoBtn.style.display = (step.autoAction && typeof step.autoAction === 'function') ? 'inline-block' : 'none';
-
       // small auto-advance if validate already true
-      setTimeout(()=> tryAdvanceIfValid(), 750);
+      setTimeout(() => tryAdvanceIfValid(), 750);
   }
 
   async function tryAdvanceIfValid() {
     const step = steps[currentStep];
     if (!step) return;
-    // if validate returns true, enable Next; optionally auto-advance if done
-    // NEW: never disable the Next button on the final step (it should finish)
+
     const isLast = (currentStep >= steps.length - 1);
     if (isLast) {
       popupEl.querySelector('#tutorial-next').disabled = false;
@@ -415,17 +413,9 @@
     if (step.validate && typeof step.validate === 'function') {
       try {
         const ok = await step.validate();
-        // if ok and we're not last step, enable next. We don't auto-forward by default except for some flows.
-        if (ok) {
-          // automatically enable "Next" button
-          popupEl.querySelector('#tutorial-next').disabled = false;
-        } else {
-          // disable Next until satisfied
-          popupEl.querySelector('#tutorial-next').disabled = true;
-        }
+        popupEl.querySelector('#tutorial-next').disabled = !ok;
       } catch(e){ console.warn('validate error', e); }
     } else {
-      // no validate function — enable Next (unless last, which is already handled)
       popupEl.querySelector('#tutorial-next').disabled = false;
     }
   }
@@ -437,37 +427,31 @@
     renderStep();
   }
 
-    async function start() {
-      if (running) return;
-      running = true;
-      currentStep = 0;
-      await loadSteps();
-      if (!steps.length) {
-        console.error("No tutorial steps loaded!");
-        running = false;
-        return;
-      }
-      createOverlay();
-      renderStep();
-      window.addEventListener('resize', onResize);
-      window.addEventListener('keydown', onKeyDown);
-      showTempMessage('Tutorial started — press Esc to exit');
+  async function start() {
+    if (running) return;
+    running = true;
+    currentStep = 0;
+    await loadSteps();
+    if (!steps.length) {
+      console.error("No tutorial steps loaded!");
+      running = false;
+      return;
     }
+    createOverlay();
+    renderStep();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('keydown', onKeyDown);
+    showTempMessage('Tutorial started — press Esc to exit');
+  }
 
   function stop() {
     running = false;
     cleanupOverlay();
-
-    // ✅ remove highlight from any leftover elements
-    document.querySelectorAll('.tutorial-highlight').forEach(el => {
-      el.classList.remove('tutorial-highlight');
-    });
-
+    document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
     clearHighlight();
     window.removeEventListener('resize', onResize);
     window.removeEventListener('keydown', onKeyDown);
     showTempMessage('Tutorial closed');
-
     window.__SUB_DEMO.startLoop();
   }
 
@@ -478,19 +462,11 @@
     if (e.key === 'ArrowLeft') goto(currentStep-1);
   }
 
-  function onResize(){
-    // re-position current popup / arrow
+  function onResize() {
     renderStep();
   }
 
-  // Expose API
-  const API = {
-    start,
-    stop,
-    goto,
-    get steps(){ return steps.slice(); }
-  };
-
+  const API = { start, stop, goto, get steps(){ return steps.slice(); } };
   window.SubDemoTutorial = API;
 
 })();

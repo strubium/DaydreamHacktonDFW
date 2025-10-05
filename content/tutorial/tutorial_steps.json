@@ -14,7 +14,7 @@
     "position": "right"
   },
   {
-    "id": "tasks2",
+    "id": "tasks3",
     "title": "The Crew",
     "text": "Each crew member has a health bar, and stats that effect how they work",
     "selector": ".name",
@@ -29,15 +29,22 @@
   },
   {
     "id": "assign",
-    "title": "Assign a Crew Member",
+    "title": "Assign a Crew Member Quickly",
     "text": "Use Quick to auto-assign the healthiest available crew.",
     "selector": "[data-action=\"fastAssign\"]",
     "position": "right"
   },
   {
-    "id": "upgrades",
+    "id": "upgrades1",
     "title": "Open Upgrades Panel",
-    "text": "You can buy upgrades for each crew member. Click Upgrades on a crew card to open the panel and purchase levels with supplies.",
+    "text": "You can buy upgrades for each crew member. Crew members can get stronger with upgrades, which makes repairs faster.",
+    "selector": ".crewContainer",
+    "position": "right"
+  },
+  {
+    "id": "upgrades",
+    "title": "Manage Upgrades",
+    "text": "Click Upgrades on a crew card to open the panel and purchase levels with supplies.",
     "selector": "[data-action=\"openUpgrades\"]",
     "position": "right"
   },

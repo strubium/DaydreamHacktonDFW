@@ -44,8 +44,15 @@
   {
     "id": "upgrades",
     "title": "Manage Upgrades",
-    "text": "Click Upgrades on a crew card to open the panel and purchase levels with supplies.",
+    "text": "Click Upgrades on a crew's card to purchase levels.",
     "selector": "[data-action=\"openUpgrades\"]",
+    "position": "right"
+  },
+  {
+    "id": "upgrades2",
+    "title": "Manage Supplies",
+    "text": "Upgrades cost supplies, and you can earn supplies by successfully completing tasks",
+    "selector": ".currency",
     "position": "right"
   },
   {

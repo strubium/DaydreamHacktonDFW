@@ -1513,9 +1513,7 @@ function renderTasks(){
     loadSave();
     crew.forEach(c => applyCrewUpgradeStats(c));
     renderAll();
-    if (document.getElementById('welcome-overlay') && document.getElementById('welcome-overlay').style.display === 'none'){
-      startLoop();
-    }
+    startLoop();
   }
 
   crew.forEach(c => applyCrewUpgradeStats(c));

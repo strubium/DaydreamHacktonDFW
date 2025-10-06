@@ -647,7 +647,7 @@
           </div>
 
           <div style="display:flex;gap:8px;margin-top:6px;align-items:center;justify-content:space-between">
-            <div class="small-muted">
+            <div class="small-muted crew-stats">
               ${isDead ? 'Unavailable' : `Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%` }
             </div>
             <div>

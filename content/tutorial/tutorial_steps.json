@@ -21,6 +21,13 @@
     "position": "right"
   },
   {
+    "id": "tasks3",
+    "title": "The Crew",
+    "text": "Speed increases the repair rate, and damage reduction protects them better from hazards",
+    "selector": ".crew-stats",
+    "position": "right"
+  },
+  {
     "id": "assign",
     "title": "Assign a Crew Member",
     "text": "Assign a crew member to a repair a task: open the \"Assign\" select on a task and choose a crew.",

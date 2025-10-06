@@ -94,6 +94,16 @@
         { type: 'damageRate', perLevel: 0.08 }
       ]
     },
+    resourceManagement: {
+      name: 'Resource Management',
+      description: 'Reduces supplies cost for upgrades by 5% per level. (Max 75%)',
+      roleRestriction: 'Captain',
+      costBase: 25,
+      applyTo: 'self',
+      effects: [
+        { type: 'upgradeCostReduction', perLevel: 0.05 }
+      ]
+    },
     med: {
       name: 'Med Training',
       description: 'Increase Medic healing rate by +50% of base per level.',
@@ -385,6 +395,7 @@
     let damageReduction = 0;
     let healBonus = 0;
     let fireSuppress = 0;
+    let upgradeCostReduction = 0;
     c.upgrades = c.upgrades || {};
 
     for (const [key, lvl] of Object.entries(c.upgrades)) {
@@ -409,6 +420,9 @@
             break;
           case 'fireSuppress':
             fireSuppress += lvl * per;
+            break;
+        case 'upgradeCostReduction':
+            upgradeCostReduction += lvl * per;
             break;
           default:
             console.warn('Unhandled upgrade effect type:', effect.type);
@@ -1412,8 +1426,32 @@ function renderTasks(){
   // ---------- Upgrades ----------
   function calcUpgradeCost(type, currentLevel){
     const def = UPGRADES[type];
-    return Math.round(def.costBase * Math.pow(1.5, currentLevel));
+    const base = Math.round(def.costBase * Math.pow(1.5, currentLevel));
+
+    // find the captain (by role or fallback to id 'capt')
+    const captain = crew.find(c => c.role === 'Captain' || c.id === 'capt');
+    if (!captain || !captain.upgrades) return base;
+
+    // compute captain's total upgradeCostReduction from their upgrades
+    let reduction = 0;
+    for (const [key, lvl] of Object.entries(captain.upgrades)) {
+      if (!lvl || lvl <= 0) continue;
+      const upgDef = UPGRADES[key];
+      if (!upgDef || !Array.isArray(upgDef.effects)) continue;
+      upgDef.effects.forEach(effect => {
+        if (effect.type === 'upgradeCostReduction') {
+          reduction += lvl * (effect.perLevel || 0);
+        }
+      });
+    }
+
+    // cap reduction so costs never go to zero (75% cap)
+    reduction = Math.min(0.75, reduction);
+
+    const final = Math.round(base * (1 - reduction));
+    return Math.max(1, final);
   }
+
 
   function purchaseUpgrade(crewId, type) {
     const purchaser = crew.find(x => x.id === crewId);

@@ -956,6 +956,7 @@ function renderTasks(){
         Current: Speed x${c.repairSpeedMult.toFixed(2)} • Damage reduction ${(c.damageReduction*100).toFixed(0)}%
         ${c.role === 'Medic' ? '• Heal rate: ' + (c.healRate || 0).toFixed(2) + ' HP/s' + (c.upgrades.autoHeal ? ' • Auto-Heal: ON' : '') : ''}
         ${c.role === 'Engineer' ? ' • Field Expertise lvl: ' + (c.upgrades.engineer || 0) : ''}
+        ${c.role === 'Captain' ? ' • Resource management lvl: ' + (c.upgrades.resourceManagement || 0) : ''}
         ${c.role === 'XO' ? ' • Fire suppression lvl: ' + (c.upgrades.fireSuppression || 0) : ''}
       </div>
     `;

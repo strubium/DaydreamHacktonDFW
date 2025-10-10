@@ -382,6 +382,10 @@
     crew.forEach(c => { c.upgrades = {speed:0, armor:0, med:0, autoHeal:0, engineer:0, fireSuppression:0}; applyCrewUpgradeStats(c); c.health=c.maxHealth; c.repairing=null; c.healTarget=null; });
     tasks.forEach(t => { t.progress=0; t.assigned=null; t.extinguisherAssigned=null; t.complete=false; t.eventDamageMult=1; t.eventSpeedMult=1; t.events=[]; });
     activeEvents.length = 0;
+    // clear game over
+    gameOver = false;
+    const endOverlay = document.getElementById('end-overlay');
+    if (endOverlay) endOverlay.style.display = 'none';
     stopNextEventTimer();
     scheduleNextEvent();
     renderAll();
@@ -580,6 +584,9 @@
 
   let deadCrewIds = new Set();
 
+  // --- game over flag ---
+  let gameOver = false;
+
   function renderCrew() {
     if (!crewContainer) return;
     crewContainer.innerHTML = '';
@@ -712,7 +719,7 @@ function renderTasks(){
     }
 
     if (t.extinguisherAssigned){
-      const c = crew.find(cc=>cc.id===t.extinguisherAssigned);
+      const c = crew.find(cc=>cc.id === t.extinguisherAssigned);
       if (c) extinguisher = c;
     }
 
@@ -1112,6 +1119,9 @@ function renderTasks(){
     lastTick = now;
     let anyChange = false;
 
+    // If game over, skip
+    if (gameOver) return;
+
     // Handle task repairs
     tasks.forEach(t=>{
       if (t.complete) return;
@@ -1304,6 +1314,15 @@ function renderTasks(){
       });
     }
 
+    // ---------- Check loss: all crew dead ----------
+    if (!gameOver && crew.every(c => c.health <= 0)) {
+      gameOver = true;
+      stopLoop();
+      stopNextEventTimer();
+      showGameOver();
+      anyChange = true;
+    }
+
     // Check win
     if (tasks.every(t=>t.complete)){
       showVictory();
@@ -1494,9 +1513,13 @@ function renderTasks(){
   }
 
   // ---------- UI events ----------
-  document.getElementById('btn-start') && document.getElementById('btn-start').addEventListener('click', ()=>{
+  document.getElementById('btn-start') && document.getElementById('btn-start').addEventListener('click', ()=> {
     const overlay = document.getElementById('welcome-overlay');
     if (overlay) overlay.style.display = 'none';
+    // clear previous game over state if any
+    gameOver = false;
+    const endOverlay = document.getElementById('end-overlay');
+    if (endOverlay) endOverlay.style.display = 'none';
     if (typeof supplies !== 'number' || supplies === 0) supplies = START_SUPPLIES;
     startLoop();
     renderAll();
@@ -1541,6 +1564,17 @@ function renderTasks(){
       if (endSub) endSub.textContent = 'All critical systems repaired. Supplies: ' + supplies + ' • Difficulty: ' + currentDifficultyName;
     }
 
+  // ---------- Game Over UI ----------
+  function showGameOver(){
+    try { playLoseSound && playLoseSound(); } catch(e) { console.warn('Lose sound failed', e); }
+    const endOverlay = document.getElementById('end-overlay');
+    if (endOverlay) endOverlay.style.display = 'flex';
+    const endTitle = document.getElementById('end-title');
+    const endSub = document.getElementById('end-sub');
+    if (endTitle) endTitle.textContent = 'ALL CREW LOST — MISSION FAILED';
+    if (endSub) endSub.textContent = 'All crew incapacitated. Supplies: ' + supplies + ' • Difficulty: ' + currentDifficultyName;
+  }
+
   function findAvailableCrew(){
     return crew.filter(c=>c.health>0 && c.repairing==null);
   }
@@ -1552,6 +1586,8 @@ function renderTasks(){
     loadSave();
     crew.forEach(c => applyCrewUpgradeStats(c));
     renderAll();
+    // clear any prior game over on load (fresh run)
+    gameOver = false;
     startLoop();
   }
 

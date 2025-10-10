@@ -1554,15 +1554,61 @@ function renderTasks(){
     if (desc) desc.textContent = `Damage x${p.damageMultiplier}, Start supplies: ${p.startSupplies}, Event cadence: ${Math.round(p.eventDelayMinMs/1000)}–${Math.round(p.eventDelayMaxMs/1000)}s`;
   }
 
-  function showVictory(){
+    // add this helper near resetUpgrades (or anywhere with other helper functions)
+    function resetSaveStateWithoutPrompt(){
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch(e) { console.warn('Failed to remove save key', e); }
+
+      supplies = START_SUPPLIES;
+      crew.forEach(c => {
+        c.upgrades = { speed:0, armor:0, med:0, autoHeal:0, engineer:0, fireSuppression:0 };
+        applyCrewUpgradeStats(c);
+        c.health = c.maxHealth;
+        c.repairing = null;
+        c.healTarget = null;
+      });
+      tasks.forEach(t => {
+        t.progress = 0;
+        t.assigned = null;
+        t.extinguisherAssigned = null;
+        t.complete = false;
+        t.eventDamageMult = 1;
+        t.eventSpeedMult = 1;
+        t.events = [];
+      });
+      activeEvents.length = 0;
+      gameOver = false;
+      stopNextEventTimer();
+      scheduleNextEvent();
+      renderAll();
+      // persist the cleared/default state immediately
+      try { save(); } catch(e){ console.warn('Save after reset failed', e); }
+    }
+
+    function showVictory(){
       try { playWinSound(); } catch(e) { console.warn('Win sound failed', e); }
+
+      // capture final values for display before we reset the save
+      const finalSupplies = supplies;
+      const finalDifficulty = currentDifficultyName;
+
       const endOverlay = document.getElementById('end-overlay');
       if (endOverlay) endOverlay.style.display = 'flex';
       const endTitle = document.getElementById('end-title');
       const endSub = document.getElementById('end-sub');
       if (endTitle) endTitle.textContent = 'YOU SURFACED — VICTORY';
-      if (endSub) endSub.textContent = 'All critical systems repaired. Supplies: ' + supplies + ' • Difficulty: ' + currentDifficultyName;
+      if (endSub) endSub.textContent = 'All critical systems repaired. Supplies: ' + finalSupplies + ' • Difficulty: ' + finalDifficulty;
+
+      // Reset the saved data so next run starts fresh
+      // (we do this immediately so the player's save is cleared on win)
+      try {
+        resetSaveStateWithoutPrompt();
+      } catch(e){
+        console.warn('Reset-on-win failed', e);
+      }
     }
+
 
   // ---------- Game Over UI ----------
   function showGameOver(){
